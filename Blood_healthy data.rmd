@@ -70,6 +70,87 @@ blood_healthy[["barcode"]] <- cell_types_ordered$barcode
 #Add cell type to meta data
 blood_healthy[["cell_type"]] <- cell_types_ordered$cell_type
 #Add treatment to meta data
-blood_healthy[["treatment"]] <- treatment$chem
-blood_healthy[["subject"]] <- treatment$timepoint
+treatment_ordered <- treatment[match(colnames(blood_healthy), treatment$barcode), ]
+blood_healthy[["treatment"]] <- treatment_ordered$timepoint
+blood_healthy[["subject"]] <- treatment_ordered$assignment
+blood_healthy[["percent.mt"]] <- PercentageFeatureSet(blood_healthy, pattern = "^MT-")
 ```
+The data is now ready to be analysed.We will start with the QC analysis after which we Normalise the data and find the variable features in the cells.
+```{r}
+#Subset the data with the following QC conditions
+blood_healthy <- subset(blood_healthy, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+#Normalize the data
+blood_healthy <- NormalizeData(blood_healthy, normalization.method = "LogNormalize", scale.factor = 10000)
+#Find variable features
+blood_healthy <- FindVariableFeatures(blood_healthy, selection.method = "vst", nfeatures = 2000)
+```
+We will now visualise the variable features in the cells using the and Variable Feature Plot function.
+```{r}
+#Visualise the variable features in the cells using VariableFeaturePlot
+top10<-head(VariableFeatures(blood_healthy),10)
+plot1 <- VariableFeaturePlot(blood_healthy)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
+ggsave("VariableFeaturePlot.png",plot2)
+```
+
+
+
+
+We will now perform the PCA analysis to see the clustering of cells based on cell_types.
+```{r}
+#Scale the data
+all.genes <- rownames(blood_healthy)
+blood_healthy <- ScaleData(blood_healthy, features = all.genes)
+#Perform PCA
+blood_healthy <- RunPCA(blood_healthy, features = VariableFeatures(object = blood_healthy))
+```
+We will now visualise the PCA analysis using the PCAPlot function.
+```{r}
+#Visualise the PCA analysis using PCAPlot
+pcaplot <- PCAPlot(blood_healthy, label = TRUE)
+pcaplot
+ggsave("PCAPlot.png",pcaplot)
+```
+Clustering the cells using umap
+```{r}
+plan(strategy = "multisession", workers = 20)
+blood_healthy <- FindNeighbors(blood_healthy, dims = 1:20)
+blood_healthy <- FindClusters(blood_healthy, resolution = 0.5)
+blood_healthy <- RunUMAP(blood_healthy, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Visualise the clustering using DimPlot
+DimPlot(blood_healthy, label = TRUE, group.by = "cell_type")
+ggsave("DimPlot_cell_type.png")
+DimPlot(blood_healthy, label = TRUE, group.by = "treatment")
+ggsave("DimPlot_treatment.png")
+```
+We will now select the pDC cells and perform the analysis on them.
+```{r}
+#Select the pDC cells
+pDC <- subset(blood_healthy, subset = cell_type == "pDC")
+#Visualise the pDC cells using DimPlot
+DimPlot(pDC, label = TRUE, group.by = "treatment")
+ggsave("DimPlot_pDC.png")
+```
+We will now select the X and Y specific genes in the pDC cells to analyse the sex based differential expression.
+```{r}
+#Select the X and Y specific genes in the pDC cells
+gtf <- rtracklayer::import(gtf_file)
+gtf_df <- as.data.frame(gtf)
+
+gene_rows <- gtf_df[gtf_df$seqnames %in% c("X", "Y") & gtf_df$type == "gene", ]
+
+gene_info <- data.frame(gene_name = gene_rows$gene_name, chromosome = gene_rows$seqnames)
+
+x_genes <- gene_info[gene_info$chromosome=="X",]
+y_genes=gene_info[gene_info$chromosome=="Y",]
+
+#Use x_genes and y_genes to filter the pDC object
+gene_names <- rownames(pDC)
+x_genes_present <- intersect(x_genes$gene_name, gene_names)
+y_genes_present <- intersect(y_genes$gene_name, gene_names)
+
+subset = gene_names %in% c(x_genes_present, y_genes_present)
+matching_genes <- gene_names[subset]
+#Selecting only the x amd y genes
+pDC <- subset(pDC, features = matching_genes)

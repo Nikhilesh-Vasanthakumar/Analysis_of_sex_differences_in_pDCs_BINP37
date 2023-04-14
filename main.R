@@ -48,11 +48,11 @@ blood_healthy[["treatment"]] <- treatment$chem
 blood_healthy[["percent.mt"]] <- PercentageFeatureSet(blood_healthy, pattern = "^MT-")
 
 
-
+#Subset the data with the following QC conditions
 blood_healthy <- subset(blood_healthy, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
-
+#Normalize the data
 blood_healthy <- NormalizeData(blood_healthy, normalization.method = "LogNormalize", scale.factor = 10000)
-
+#Find variable features
 blood_healthy <- FindVariableFeatures(blood_healthy, selection.method = "vst", nfeatures = 2000)
 
 #Variable feature plot
