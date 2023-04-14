@@ -1,0 +1,75 @@
+---
+title: "Blood_healthy -Blood scRNAseq healthy state Oelen 2019"
+output: html_notebook
+---
+
+The data used is collected from 120 Northern Netherlands population cohort Lifeline found from
+https://eqtlgen.org/sc/datasets/1m-scbloodnl-dataset.html
+
+For each Individual, the following data is collected:
+Unstimulated
+3h,24h stimulated with C. albicans
+3h,24h stimulated with M. tuberculosis
+3h,24h stimulated with P. aeruginosa
+
+Two versions of the data are available:
+v2: 907 genes/cell,
+v3: 1861 genes/cell
+The data is available in the following files:
+1M_assignments_conditions_expid.tsv
+1M_cell_types.tsv
+1M_v2_20201029_RNA.mtx
+1M_v2_20201029_RNA_colnames.tsv
+1M_v2_20201029_RNA_rownames.tsv
+
+Loading in the required packages and data
+```{r}
+#Load the required packages
+library(Seurat)
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+library(rtracklayer)
+library(Matrix)
+
+# Load the data
+# Set file paths
+matrix_path <- "1M_v2_20201029_RNA.mtx"
+cells_path <- "1M_v2_20201029_RNA_colnames.txt"
+features_path <- "1M_v2_20201029_RNA_rownames.txt"
+cell_types_path <- "1M_cell_types.tsv"
+assignment_conditions <- "1M_assignments_conditions_expid.tsv"
+#GTF file
+gtf_file <- "Homo_sapiens.GRCh38.109.gtf"
+# Read in counts matrix
+counts <- readMM(matrix_path)
+# Read in cells file and set column names of counts matrix
+cells <- read.table(cells_path, header = FALSE)
+colnames(counts) <- cells$V1
+# Read in features file and set row names of counts matrix
+features <- read.table(features_path, header = FALSE)
+rownames(counts) <- features[,1]
+#Read the annotation file
+cell_types <- read.table(cell_types_path, header = TRUE, sep = "\t")
+treatment <- read.table(assignment_conditions,header =TRUE ,sep ="\t")
+
+```
+
+Creating a Seurat object using the data to start analysing them.
+```{r}
+blood_healthy <- CreateSeuratObject(counts = counts, project = "blood_healthy", min.cells = 3, min.features = 200,Idents =cell_types$cell_type)
+```
+
+Sorting the barcodes file to make sure they are in order and mapping them with the seurat object
+```{r}
+cell_types_ordered <- cell_types[match(colnames(blood_healthy), cell_types$barcode), ]
+#Setting the Identity of the cells based on the barcode mapping
+Idents(blood_healthy) <- cell_types_ordered$cell_type
+#Uploading the meta data to the seurat object
+blood_healthy[["barcode"]] <- cell_types_ordered$barcode
+#Add cell type to meta data
+blood_healthy[["cell_type"]] <- cell_types_ordered$cell_type
+#Add treatment to meta data
+blood_healthy[["treatment"]] <- treatment$chem
+blood_healthy[["subject"]] <- treatment$timepoint
+```
