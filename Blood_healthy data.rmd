@@ -154,3 +154,8 @@ subset = gene_names %in% c(x_genes_present, y_genes_present)
 matching_genes <- gene_names[subset]
 #Selecting only the x amd y genes
 pDC <- subset(pDC, features = matching_genes)
+```
+We will now perform the differential expression analysis of the genes in the sexes in the pDC cells.
+```{r}
+
+
