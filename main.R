@@ -13,7 +13,7 @@ cell_types_path <- "1M_cell_types.tsv"
 assignment_conditions <- "1M_assignments_conditions_expid.tsv"
 #GTF file
 gtf_file <- "Homo_sapiens.GRCh38.109.gtf"
-
+#Write something copilot
 
 # Read in counts matrix
 counts <- readMM(matrix_path)
@@ -149,3 +149,7 @@ DimPlot(pDC,reduction = "umap",group.by="",pt.size = 0.5)
 #cluster.averages <- AverageExpression(pDC, assays = "RNA", return.seurat = TRUE)
 
 #ymarkers=FindAllMarkers(pDC,ident="all",genes.use=y_genes$gene_name)
+
+idents = c("2", "12","3","8","16","13","14","22","21","18","23","27","26", "24", "30", "32", "37","44", "45", "41", "39", "58", "60", "64", "65","68", "67", "73", "79", "84","77","78","82","92","91","90","94", "100","96","107","108","122","120", "123","7","6")
+#Convert to Idents vector to numeric
+idents <- as.numeric(idents)

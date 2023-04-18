@@ -58,6 +58,8 @@ treatment <- read.table(assignment_conditions,header =TRUE ,sep ="\t")
 Creating a Seurat object using the data to start analysing them.
 ```{r}
 blood_healthy <- CreateSeuratObject(counts = counts, project = "blood_healthy", min.cells = 3, min.features = 200,Idents =cell_types$cell_type)
+#saveRDS(blood_healthy,file="blood_healthy.rds")
+blood_healthy<- readRDS("Reusable data/blood_healthy.rds")
 ```
 
 Sorting the barcodes file to make sure they are in order and mapping them with the seurat object
@@ -91,7 +93,7 @@ top10<-head(VariableFeatures(blood_healthy),10)
 plot1 <- VariableFeaturePlot(blood_healthy)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot2
-ggsave("VariableFeaturePlot.png",plot2)
+#ggsave("VariableFeaturePlot.png",plot2)
 ```
 
 
@@ -110,27 +112,43 @@ We will now visualise the PCA analysis using the PCAPlot function.
 #Visualise the PCA analysis using PCAPlot
 pcaplot <- PCAPlot(blood_healthy, label = TRUE)
 pcaplot
-ggsave("PCAPlot.png",pcaplot)
+#ggsave("PCAPlot_bycell_type.png",pcaplot)
+#Visualise the PCA analysis using VizDimLoadings
+featuresdefpca <- VizDimLoadings(blood_healthy, dims = 1:4, reduction = "pca")
+featuresdefpca
+#ggsave("Defining_features.png",featuresdefpca)
+Combined_features <- VizDimLoadings(blood_healthy, dims = 1:20, reduction = "pca",combine=TRUE)
+Combined_features
+#ggsave("Combined_features_plot.png",Combined_features)
 ```
 Clustering the cells using umap
 ```{r}
-plan(strategy = "multisession", workers = 20)
+plan(strategy = "multisession", workers = 50)
 blood_healthy <- FindNeighbors(blood_healthy, dims = 1:20)
-blood_healthy <- FindClusters(blood_healthy, resolution = 0.5)
+blood_healthy <- FindClusters(blood_healthy, resolution = 0.5,future.seed = TRUE)
 blood_healthy <- RunUMAP(blood_healthy, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
 #Visualise the clustering using DimPlot
-DimPlot(blood_healthy, label = TRUE, group.by = "cell_type")
-ggsave("DimPlot_cell_type.png")
-DimPlot(blood_healthy, label = TRUE, group.by = "treatment")
-ggsave("DimPlot_treatment.png")
+#DimPlot(blood_healthy, label = TRUE, group.by = "cell_type")
+#ggsave("DimPlot_cell_type.png")
+#DimPlot(blood_healthy, label = TRUE, group.by = "treatment")
+#ggsave("DimPlot_treatment.png")
+#DimPlot(blood_healthy, label = TRUE, group.by = c("treatment", "cell_type"))
+#ggsave("DimPlot_treatment&cell_type.png")
 ```
 We will now select the pDC cells and perform the analysis on them.
 ```{r}
 #Select the pDC cells
+
+# Subset the original object
 pDC <- subset(blood_healthy, subset = cell_type == "pDC")
+
+saveRDS(pDC,file="pDC_mod.rds")
+pDC <-readRDS("pDC_mod.rds")
 #Visualise the pDC cells using DimPlot
 DimPlot(pDC, label = TRUE, group.by = "treatment")
-ggsave("DimPlot_pDC.png")
+ggsave("DimPlot_pDC_treatment.png")
+DimPlot(pDC, label = TRUE)
+ggsave("DimPlot_pDC_clustered.png")
 ```
 We will now select the X and Y specific genes in the pDC cells to analyse the sex based differential expression.
 ```{r}
@@ -153,9 +171,48 @@ y_genes_present <- intersect(y_genes$gene_name, gene_names)
 subset = gene_names %in% c(x_genes_present, y_genes_present)
 matching_genes <- gene_names[subset]
 #Selecting only the x amd y genes
-pDC <- subset(pDC, features = matching_genes)
-```
-We will now perform the differential expression analysis of the genes in the sexes in the pDC cells.
-```{r}
 
+pDC_meta <- subset(pDC, features = y_genes_present)
+pDC_meta <- subset(pDC_meta, subset = nFeature_RNA > 0)
+cluster.average <-AverageExpression(pDC_meta,features = y_genes_present,group.by = "subject",return.seurat = TRUE)
+VlnPlot(cluster.average, features = y_genes_present)
+ggsave("VlnPlot_Average_male.png")
+DoHeatmap(cluster.average, features = y_genes_present)
+ggsave("Average_Heatmap.png")
+
+#Select the male subjects based on the y_genes
+# Calculate 95th percentile value for all the genes in y_genes_present
+q_val1 <- quantile(pDC_meta@assays$RNA@data["USP9Y",], probs = 0.95)
+qval2 <- quantile(pDC_meta@assays$RNA@data["EIF1AY",], probs = 0.95)
+qval5 <- quantile(pDC_meta@assays$RNA@data["KDM5D",], probs = 0.95)
+qval6 <- quantile(pDC_meta@assays$RNA@data["RPS4Y1",], probs = 0.95)
+qval7 <- quantile(pDC_meta@assays$RNA@data["ZFY",], probs = 0.95)
+qval9 <- quantile(pDC_meta@assays$RNA@data["DDX3Y",], probs = 0.95)
+qval10 <- quantile(pDC_meta@assays$RNA@data["UTY",], probs = 0.95)
+
+
+Male <- subset(pDC_meta, subset = USP9Y > q_val1 | EIF1AY > qval2 | KDM5D > qval5 | RPS4Y1 > qval6 | ZFY > qval7 | DDX3Y > qval9 | UTY > qval10)
+#Add sex to the meta data
+Male <- AddMetaData(Male, metadata = data.frame(sex = rep("male", nrow(Male@meta.data))))
+Male@meta.data$sex <- "Male"
+pDC[["sex"]]<-NA
+
+#Now mark the subjects as Males in the pDC dataset
+#Logic used If the subject values match in Male@meta.data$subject and pDC@meta.data$subject then add male to the corresponding sex column
+# Find matching subjects in Male dataset
+matching_subjects <- intersect(Male@meta.data$subject, pDC@meta.data$subject)
+
+# Loop through the matching subjects and mark them as males in pDC dataset
+for (subject in matching_subjects) {
+  pDC@meta.data[pDC@meta.data$subject == subject, "sex"] <- "Male"
+}
+#Assigning the NA columns as female
+pDC@meta.data$sex <- ifelse(is.na(pDC@meta.data$sex), "Female", pDC@meta.data$sex)
+saveRDS(pDC,file="pDC_sex.rds")
+#Heatmap to visualize based on Sex
+DoHeatmap(pDC,features = c("IL13RA1","ATP11C","MID1","IQSEC2","PAK3","ZNF185","UXT","USP9Y","EIFIAY","KDM5D"),group.by = "sex")
+cluster.average_all <- AverageExpression(pDC,features = c(x_genes_present,y_genes_present),group.by = c("subject","sex"),return.seurat = TRUE)
+VlnPlot(cluster.average_all,features = c(x_genes_present,y_genes_present))
+
+```
 
