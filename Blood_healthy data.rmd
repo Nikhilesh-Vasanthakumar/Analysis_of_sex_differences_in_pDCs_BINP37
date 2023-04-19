@@ -30,6 +30,7 @@ library(dplyr)
 library(ggplot2)
 library(patchwork)
 library(rtracklayer)
+library(methods)
 library(Matrix)
 
 # Load the data
@@ -209,10 +210,147 @@ for (subject in matching_subjects) {
 #Assigning the NA columns as female
 pDC@meta.data$sex <- ifelse(is.na(pDC@meta.data$sex), "Female", pDC@meta.data$sex)
 saveRDS(pDC,file="pDC_sex.rds")
+pDC <- readRDS(file="pDC_sex.rds")
 #Heatmap to visualize based on Sex
 DoHeatmap(pDC,features = c("IL13RA1","ATP11C","MID1","IQSEC2","PAK3","ZNF185","UXT","USP9Y","EIFIAY","KDM5D"),group.by = "sex")
 cluster.average_all <- AverageExpression(pDC,features = c(x_genes_present,y_genes_present),group.by = c("subject","sex"),return.seurat = TRUE)
-VlnPlot(cluster.average_all,features = c(x_genes_present,y_genes_present))
+VlnPlot(cluster.average,features = c(x_genes_present,y_genes_present))
 
 ```
 
+```{r}
+#Now split pDC by sexes
+Male <- subset(pDC,subset= sex == "Male")
+Female <-subset(pDC, subset =sex =="Female")
+
+Male <-NormalizeData(Male)
+Female <-NormalizeData(Female)
+
+#Perform PCA on both the sexes
+Male <- RunPCA(Male, features=VariableFeatures(object = Male))
+Female <- RunPCA(Female,features =VariableFeatures(object = Female))
+DimPlot(Male,reduction = "pca", group.by = "treatment")
+ggsave("Male_pca_treat.png")
+DimPlot(Female,reduction = "pca", group.by = "treatment")
+ggsave("Female_pca_treat.png")
+#Perform UMAP
+plan(strategy = "multisession", workers = 50)
+Male <- FindNeighbors(Male,dims=1:20)
+Male <- FindClusters(Male, resolution = 0.5,future.seed = TRUE)
+#Run UMAP
+Male <- RunUMAP(Male, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Visualize UMAP
+DimPlot(Male,group.by = "treatment",label = TRUE)
+ggsave("Male_treat_UMAP.png")
+#Now visualize for Females
+Female <-FindNeighbors(Female,dims=1:20)
+Female <-FindClusters(Female,resolution = 0.5)
+#Run UMAP
+Female <- RunUMAP(Female, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+DimPlot(Female,group.by = "treatment",label =TRUE)
+ggsave("Female_treat_UMAP.png")
+
+#Now performing PCA on the combined dataset
+pDC <- NormalizeData(pDC)
+pDC <- RunPCA(pDC, features = VariableFeatures(object = pDC))
+DimPlot(pDC, reduction = "pca", group.by = "treatment",label = TRUE)
+ggsave("pDC_treat_pca.png")
+DimPlot(pDC,reduction = "pca",group.by = c("sex","treatment"),label = TRUE)
+ggsave("pDC_sex&treat_pca.png")
+#Perform UMAP
+pDC <- FindNeighbors(pDC, dims = 1:20)
+pDC <- FindClusters(pDC, resolution = 0.5)
+pDC <- RunUMAP(pDC, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+DimPlot(pDC,reduction = "umap",group.by= c("sex","treatment"),label = TRUE)
+ggsave("pDC_sex&treat_UMAP.png")
+#Now find Heatmap of the combined dataset
+varia <- VariableFeatures(object = pDC)
+top10 <- head(varia,10)
+DoHeatmap(pDC,features = top10,group.by= "sex")
+ggsave("pDC_heat_sex.png")
+Idents(pDC) <- "subject"
+cluster.average <- AverageExpression(pDC,group.by="subject",return.seurat = TRUE)
+# extract the numbers from the current idents
+new_idents <- as.character(gsub("[^0-9]", "", names(Idents(cluster.average))))
+# Add the new idents to the cluster.average object meta data
+cluster.average[["subject"]] <- new_idents
+
+# Create a lookup table of subject and sex values from the pDC dataset
+subject_sex_lookup <- pDC@meta.data[, c("subject", "sex")]
+# Remove rows with NAs
+subject_sex_lookup <- na.omit(subject_sex_lookup)
+# Remove duplicates
+subject_sex_lookup <- unique(subject_sex_lookup)
+# Order by subject
+subject_sex_lookup <- subject_sex_lookup[order(subject_sex_lookup$subject),]
+
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average@meta.data$sex <- rep(NA, nrow(cluster.average@meta.data))
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+
+#Normalize the cluster average
+cluster.average <- NormalizeData(cluster.average)
+#Scale the data
+cluster.average <- ScaleData(cluster.average,features =rownames(cluster.average))
+#Find variable features
+cluster.average <- FindVariableFeatures(object=cluster.average)
+#Run PCA
+cluster.average <- RunPCA(cluster.average,features = VariableFeatures(object = cluster.average))
+#Run UMAP
+cluster.average <- FindNeighbors(cluster.average,dims=1:20)
+#Find clusters
+cluster.average <- FindClusters(cluster.average, resolution = 0.5)
+#Run UMAP
+cluster.average <- RunUMAP(cluster.average, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Visualize UMAP
+DoHeatmap(cluster.average)
+
+
+#DoHeatmap
+DoHeatmap(cluster.average,features= c("UTY", "DDX3Y", "KDM5D", "RPS4Y1","RPS4X", "ZFX", "EIFAX", "XIST"),group.by =c("sex"))
+ggsave("pDC_average&sex_heatmap.png")
+
+
+
+```
+
+```{r}
+#Now perform DE analysis
+#First perform DE analysis on the combined dataset
+plan(strategy = "multisession", workers = 50)
+Idents(cluster.average) <- cluster.average@meta.data$sex
+markers <- FindAllMarkers(cluster.average, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+#Visualize the DE genes
+VlnPlot(cluster.average,features = markers$gene)
+ggsave("cluster.average_DE_genes.png")
+VlnPlot(pDC,features = markers$gene,group.by = "sex")
+ggsave("pDC_DE_genes_Vln.png")
+DoHeatmap(pDC,features = markers$gene,group.by = "sex")
+ggsave("pDC_DE_heatmap.png")
+DoHeatmap(cluster.average,features = markers$gene, group.by ="sex")
+ggsave("cluster.average_DE_heatmap.png")
+
+Idents(pDC) <- pDC@meta.data$treatment
+markers_treat <- FindAllMarkers(pDC, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+top10 <- head(markers_treat$gene,10)
+VlnPlot(pDC,features = top10,group.by = "treatment")
+ggsave("pDC_treat_DE_genes_Vln.png")
+
+
+
+#Find conserved DE genes for treatment
+#Add time column to the pDC object meta data
+Idents(cluster.average) <- cluster.average@meta.data$subject
+markers_AVG <- FindAllMarkers(cluster.average, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+
+```
