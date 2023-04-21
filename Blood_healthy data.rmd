@@ -32,6 +32,7 @@ library(patchwork)
 library(rtracklayer)
 library(methods)
 library(Matrix)
+library(monocle3)
 
 # Load the data
 # Set file paths
@@ -210,11 +211,52 @@ for (subject in matching_subjects) {
 #Assigning the NA columns as female
 pDC@meta.data$sex <- ifelse(is.na(pDC@meta.data$sex), "Female", pDC@meta.data$sex)
 saveRDS(pDC,file="pDC_sex.rds")
-pDC <- readRDS(file="pDC_sex.rds")
-#Heatmap to visualize based on Sex
-DoHeatmap(pDC,features = c("IL13RA1","ATP11C","MID1","IQSEC2","PAK3","ZNF185","UXT","USP9Y","EIFIAY","KDM5D"),group.by = "sex")
-cluster.average_all <- AverageExpression(pDC,features = c(x_genes_present,y_genes_present),group.by = c("subject","sex"),return.seurat = TRUE)
-VlnPlot(cluster.average,features = c(x_genes_present,y_genes_present))
+pDC <- readRDS(file="Reusable data/pDC_sex.rds")
+DimPlot(pDC)
+#Analyse the pDC clusters
+cells_per_subject <- table(pDC@meta.data$subject)
+
+# Create a bar plot
+barplot(cells_per_subject, main = "Cells per Person", xlab = "Person", ylab = "Number of Cells")
+ggsave("Cells_per_person_bar.png")
+#Visualize the clusters using bar plot group by sex
+cells_per_sex <- table(pDC@meta.data$sex)
+cell_counts_df <- data.frame(
+  sex = names(cells_per_sex),
+  count = as.numeric(cells_per_sex)
+)
+
+# Create the bar plot
+ggplot(cell_counts_df, aes(x = sex, y = count, fill = sex)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("red", "blue")) +
+  xlab("Sex") +
+  ylab("Cell Count") +
+  ggtitle("Number of Cells by Sex")
+ggsave("cells_by_Sex_bar.png")
+
+# Aggregate based on RNA_Cluster
+pDC_sub <- subset(pDC, idents = c("17", "18", "19"))
+# Create a table of cell counts by subject and cluster
+cell_counts <- table(pDC_sub@meta.data$subject, pDC_sub@meta.data$seurat_clusters)
+
+# Convert to a data frame and add a column for subject IDs
+cell_counts_df <- as.data.frame.matrix(cell_counts)
+cell_counts_df$subject <- rownames(cell_counts_df)
+
+# Reshape the data to long format for plotting
+cell_counts_long <- tidyr::gather(cell_counts_df, cluster, count, -subject)
+
+# Create the stacked bar plot
+ggplot(cell_counts_long, aes(x = subject, y = count, fill = cluster)) +
+  geom_bar(stat = "identity") +
+  xlab("Subject ID") +
+  ylab("Cell Count") +
+  ggtitle("Number of Cells by Cluster and Subject")
+ggsave("cells_by_cluster_subject_bar.png")
+
+
+
 
 ```
 
@@ -263,6 +305,8 @@ pDC <- FindClusters(pDC, resolution = 0.5)
 pDC <- RunUMAP(pDC, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
 DimPlot(pDC,reduction = "umap",group.by= c("sex","treatment"),label = TRUE)
 ggsave("pDC_sex&treat_UMAP.png")
+DimPlot(pDC)
+ggsave("pDC_UMAP_ungrouped.png")
 #Now find Heatmap of the combined dataset
 varia <- VariableFeatures(object = pDC)
 top10 <- head(varia,10)
@@ -315,6 +359,7 @@ cluster.average <- RunUMAP(cluster.average, dims = 1:20, n.neighbors = 50, min.d
 #Visualize UMAP
 DoHeatmap(cluster.average)
 
+#Check for IFNA1
 
 #DoHeatmap
 DoHeatmap(cluster.average,features= c("UTY", "DDX3Y", "KDM5D", "RPS4Y1","RPS4X", "ZFX", "EIFAX", "XIST"),group.by =c("sex"))
@@ -345,12 +390,45 @@ markers_treat <- FindAllMarkers(pDC, only.pos = TRUE, min.pct = 0.25, logfc.thre
 top10 <- head(markers_treat$gene,10)
 VlnPlot(pDC,features = top10,group.by = "treatment")
 ggsave("pDC_treat_DE_genes_Vln.png")
-
-
+#VlnPlot for Interferon genes
+#According to https://pubmed.ncbi.nlm.nih.gov/25839220/ IFNAR1, IFNAR2, LY6E, MX1, OAS3, IFI44L, IFI6, IFITM3 are upregulated which are all INF related genes.
+VlnPlot(pDC,features = c("IFNAR1","IFNAR2","LY6E","MX1","OAS3","IFI44L","IFI6","IFITM3"),group.by = "treatment")
+ggsave("pDC_treat_IFN_genes_Upreg_Vln.png")
+#And these are the downregulated genes
+#MGAM,ZNF331,PTGS2,MME,IL1R2,IL8,CXCL1,GOS2,NR4A2,NR4A3
+VlnPlot(pDC,features = c("MGAM","ZNF331","PTGS2","MME","IL1R2","IL8","CXCL1","GOS2","NR4A2","NR4A3"),group.by = "treatment")
+ggsave("pDC_treat_IFN_genes_Downreg_Vln.png")
 
 #Find conserved DE genes for treatment
 #Add time column to the pDC object meta data
-Idents(cluster.average) <- cluster.average@meta.data$subject
-markers_AVG <- FindAllMarkers(cluster.average, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+
 
 ```
+```{r}
+#Perform Pseudotime analysis using Monocle3 on the pDC Seurat object
+#First convert the Seurat object to a Monocle3 object
+ library(SeuratWrappers)
+Idents(pDC) <- pDC@meta.data$treatment
+pDC_mc <- as.cell_data_set(pDC)
+recreate.partitions <- c(rep(1, length(pDC_mc@colData@rownames)))
+names(recreate.partitions) <- pDC_mc@colData@rownames
+recreate.partitions <- as.factor(recreate.partitions)
+pDC_mc@clusters@listData[["UMAP"]][["partitions"]] <- recreate.partitions
+list.cluster <- pDC@active.ident
+pDC_mc@clusters@listData[["UMAP"]][["clusters"]] <- list.cluster
+pDC_mc@int_colData@listData[["reducedDims"]]@listData[["UMAP"]] <- pDC@reductions$umap@cell.embeddings
+cluster.before.traj <-plot_cells(pDC_mc, color_cells_by = "cluster", label_groups_by_cluster = F,
+           group_label_size = 5) + theme(legend.position = "right")
+cluster.before.traj
+pDC_mc <- learn_graph(pDC_mc, use_partition = F)
+plot_cells(pDC_mc, color_cells_by = "cluster", label_groups_by_cluster = F,
+           group_label_size = 5) + theme(legend.position = "right")
+pDC_mc <- order_cells(pDC_mc,reduction_method = "UMAP",verbose = T)
+plot_cells(pDC_mc, color_cells_by = "pseudotime", label_groups_by_cluster = T,
+           label_branch_points = T, label_roots = F, label_leaves = F) + theme(legend.position = "right")
+```
+
+
+
+
+
