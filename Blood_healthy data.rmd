@@ -176,24 +176,38 @@ matching_genes <- gene_names[subset]
 
 pDC_meta <- subset(pDC, features = y_genes_present)
 pDC_meta <- subset(pDC_meta, subset = nFeature_RNA > 0)
-cluster.average <-AverageExpression(pDC_meta,features = y_genes_present,group.by = "subject",return.seurat = TRUE)
-VlnPlot(cluster.average, features = y_genes_present)
-ggsave("VlnPlot_Average_male.png")
-DoHeatmap(cluster.average, features = y_genes_present)
-ggsave("Average_Heatmap.png")
+Idents(pDC_meta) <- "subject"
 
-#Select the male subjects based on the y_genes
+
+#Find genes in y_genes present whose Mean expression is >0
+y_genes_expr <- AverageExpression(pDC_meta, features = y_genes_present,idents = "subject")
+y_genes_mean_expr <- rowMeans(y_genes_expr$RNA)
+#Get a vector of genes names with mean expression >0.5
+y_genes_mean_expr <- y_genes_mean_expr > 0.5
+#Select only the genes names with True value
+y_genes_present_fil <- y_genes_present[y_genes_mean_expr]
 # Calculate 95th percentile value for all the genes in y_genes_present
-q_val1 <- quantile(pDC_meta@assays$RNA@data["USP9Y",], probs = 0.95)
-qval2 <- quantile(pDC_meta@assays$RNA@data["EIF1AY",], probs = 0.95)
-qval5 <- quantile(pDC_meta@assays$RNA@data["KDM5D",], probs = 0.95)
-qval6 <- quantile(pDC_meta@assays$RNA@data["RPS4Y1",], probs = 0.95)
-qval7 <- quantile(pDC_meta@assays$RNA@data["ZFY",], probs = 0.95)
-qval9 <- quantile(pDC_meta@assays$RNA@data["DDX3Y",], probs = 0.95)
-qval10 <- quantile(pDC_meta@assays$RNA@data["UTY",], probs = 0.95)
+qval1 <- quantile(pDC_meta@assays$RNA@data["USP9Y",], probs = 0.9625)
+qval2 <- quantile(pDC_meta@assays$RNA@data["EIF1AY",], probs = 0.9625)
+qval5 <- quantile(pDC_meta@assays$RNA@data["KDM5D",], probs = 0.9625)
+qval6 <- quantile(pDC_meta@assays$RNA@data["RPS4Y1",], probs = 0.9625)
+qval7 <- quantile(pDC_meta@assays$RNA@data["ZFY",], probs = 0.9625)
+qval9 <- quantile(pDC_meta@assays$RNA@data["DDX3Y",], probs = 0.9625)
+qval10 <- quantile(pDC_meta@assays$RNA@data["UTY",], probs = 0.9625)
+
+#Trying out the filter
+qvals <- vector(length = length(y_genes_present_fil))
+for (i in seq_along(y_genes_present_fil)) {
+  qvals[i] <- quantile(pDC_meta@assays$RNA@data[y_genes_present_fil[i], ], probs = 0.95)
+}
+
+Male <-subset(pDC_meta,subset = EIF1AY > qvals[1] | RPS4Y1 > qvals[2])
+# combine the subsets into a single dataset
+Male <- do.call("rbind", Male_list)
+
+Male <- subset(pDC_meta, subset = USP9Y > qval1 | EIF1AY > qval2 | KDM5D > qval5 | RPS4Y1 > qval6 | ZFY > qval7 | DDX3Y > qval9 | UTY > qval10)
 
 
-Male <- subset(pDC_meta, subset = USP9Y > q_val1 | EIF1AY > qval2 | KDM5D > qval5 | RPS4Y1 > qval6 | ZFY > qval7 | DDX3Y > qval9 | UTY > qval10)
 #Add sex to the meta data
 Male <- AddMetaData(Male, metadata = data.frame(sex = rep("male", nrow(Male@meta.data))))
 Male@meta.data$sex <- "Male"
@@ -307,11 +321,7 @@ DimPlot(pDC,reduction = "umap",group.by= c("sex","treatment"),label = TRUE)
 ggsave("pDC_sex&treat_UMAP.png")
 DimPlot(pDC)
 ggsave("pDC_UMAP_ungrouped.png")
-#Now find Heatmap of the combined dataset
-varia <- VariableFeatures(object = pDC)
-top10 <- head(varia,10)
-DoHeatmap(pDC,features = top10,group.by= "sex")
-ggsave("pDC_heat_sex.png")
+
 Idents(pDC) <- "subject"
 cluster.average <- AverageExpression(pDC,group.by="subject",return.seurat = TRUE)
 # extract the numbers from the current idents
@@ -361,13 +371,12 @@ cluster.average <- FindClusters(cluster.average, resolution = 0.5)
 #Run UMAP
 cluster.average <- RunUMAP(cluster.average, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
 
-#Visualize UMAP
-DoHeatmap(cluster.average)
+
 
 #Check for IFNA1
 
 #DoHeatmap
-DoHeatmap(cluster.average,features= c("UTY", "DDX3Y", "KDM5D", "RPS4Y1","RPS4X", "ZFX", "EIFAX", "XIST"),group.by =c("sex"))
+DoHeatmap(cluster.average,features= c("EIF1AY","RPS4Y1"),group.by = 'sex')
 ggsave("pDC_average&sex_heatmap.png")
 
 
@@ -436,31 +445,33 @@ library(EnhancedVolcano)
 library(enrichplot)
 library(clusterProfiler)
 library(org.Hs.eg.db)
-library(KEGGREST)
-library(AnnotationDbi)
 library(tibble)
 library(plotly)
-library(DOSE)
+
 pDC_combined <- pDC
 sexsubject <- paste(pDC_combined@meta.data$sex,pDC_combined@meta.data$subject,sep = "_")
 sextreatment <- paste(pDC_combined@meta.data$sex,pDC_combined@meta.data$treatment,sep = "_")
 pDC_combined[["sex.treatment"]] <- sextreatment
 DimPlot(pDC_combined,group.by = "sex.treatment",label = T,pt.size = 0.5)
 ggsave("Dimplot using combined column of sex andtreatment.png")
-#Volcano plot for Untreated Male vs Female
-unt_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_UT", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
-EnhancedVolcano(unt_diffs,x='avg_log2FC',y='p_val',lab=rownames(unt_diffs),pCutoff = 0.05,FCcutoff = 0.25)
-#Perform differential expression analysis on this combined column for each time point for each disease
+
 Idents(pDC_combined) <- pDC_combined@meta.data$sex.treatment
+#Perform differential expression analysis on this combined column for each time point for each disease
+unt_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_UT", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
+#Volcano plot for Untreated Male vs Female
+EnhancedVolcano(unt_diffs,x='avg_log2FC',y='p_val',lab=rownames(unt_diffs),pCutoff = 0.05,FCcutoff = 0.25)
+ggsave("Volcano Plot Male_Female_UT.png")
 #Gene Ontology Untreated
 ego <- enrichGO(gene = rownames(unt_diffs) , OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "all", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
 #Plot GO enrichment analysis
 dotplot(ego, showCategory = 20)
+ggsave("GO_enrichment_UT.png")
 #Convert to Entez IDs
 Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(unt_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
 #Perform KEGG enrichment analysis
 kegg <- enrichKEGG(gene = Ids_entrez, organism = "hsa", pvalueCutoff = 0.05, qvalueCutoff = 0.05)
 dotplot(kegg, showCategory = 20)
+ggsave("KEGG_enrichment_UT.png")
 
 
 #3H Candida
@@ -472,9 +483,11 @@ colnames(CA3h_female_diffs) <- paste(colnames(CA3h_female_diffs),"Female",sep = 
 merged_data <- merge(CA3h_male_diffs, CA3h_female_diffs, by="row.names", all=TRUE)
 plot1_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, label = Row.names)) +
   geom_point() +
-  geom_text(hjust = -0.1, vjust = 0.1) +
+  geom_text(hjust = -0.1, vjust = 0.1,size=3) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   theme_bw()
+plot1_3h
+ggsave(filename = "CA_3H.png",plot = plot1_3h)
 ggplotly(plot1_3h)
 #Filter marker based on p value and log2fc
 CA3h_male_de_genes <- CA3h_male_diffs[CA3h_male_diffs$p_val_Male < 0.01 & abs(CA3h_male_diffs$avg_log2FC_Male) > 0.50, ]
@@ -485,11 +498,14 @@ genes_CA_3h <- c(rownames(CA3h_female_de_genes),rownames(CA3h_male_de_genes))
 ego <- enrichGO(gene = genes_CA_3h , OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "all", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
 #Plot GO enrichment analysis
 dotplot(ego, showCategory = 20)
+ggsave("GO_enrichment_CA_3H.png")
 #Convert to Entez IDs
 Ids_entrez <- mapIds(org.Hs.eg.db,keys=genes_CA_3h,column="ENTREZID", keytype="SYMBOL", multiVals="first")
 #Perform KEGG enrichment analysis
 kegg <- enrichKEGG(gene = Ids_entrez, organism = "hsa", pvalueCutoff = 0.05, qvalueCutoff = 0.05)
 dotplot(kegg, showCategory = 20)
+ggsave("KEGG_enrichment_CA_3H.png")
+
 #24H Candida
 
 CA24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hCA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
@@ -499,9 +515,11 @@ colnames(CA24h_female_diffs) <- paste(colnames(CA24h_female_diffs),"Female",sep 
 merged_data <- merge(CA24h_male_diffs, CA24h_female_diffs, by="row.names", all=TRUE)
 plot1_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, label = Row.names)) +
   geom_point() +
-  geom_text(hjust = -0.1, vjust = 0.1) +
+  geom_text(hjust = -0.1, vjust = 0.1,size = 3) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   theme_bw()
+plot1_24h
+ggsave(filename = "CA_24H.png",plot = plot1_24h)
 ggplotly(plot1_24h)
 #Filter marker based on p value and log2fc
 CA24h_male_de_genes <- CA24h_male_diffs[CA24h_male_diffs$p_val_Male < 0.01 & abs(CA24h_male_diffs$avg_log2FC_Male) > 0.50, ]
@@ -512,11 +530,13 @@ genes_CA_24h <- c(rownames(CA24h_female_de_genes),rownames(CA24h_male_de_genes))
 ego <- enrichGO(gene = genes_CA_24h , OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "all", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
 #Plot GO enrichment analysis
 dotplot(ego, showCategory = 20)
+ggsave(filename = "CA_24H_GO.png",plot = dotplot(ego, showCategory = 20))
 #Convert to Entez IDs
 Ids_entrez <- mapIds(org.Hs.eg.db,keys=genes_CA_24h,column="ENTREZID", keytype="SYMBOL", multiVals="first")
 #Perform KEGG enrichment analysis
 kegg <- enrichKEGG(gene = Ids_entrez, organism = "hsa", pvalueCutoff = 0.05, qvalueCutoff = 0.05)
 dotplot(kegg, showCategory = 20)
+ggsave(filename = "CA_24H_KEGG.png",plot = dotplot(kegg, showCategory = 20))
 
 #3h Pseudomonas
 PA3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hPA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
@@ -530,6 +550,8 @@ plot2_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   geom_text(hjust = -0.1, vjust = 0.1) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   theme_bw()
+plot2_3h
+ggsave(filename = "PA_3H.png",plot = plot2_3h)
 ggplotly(plot2_3h)
 
 #Filter marker based on p value and log2fc
@@ -541,12 +563,13 @@ genes_PA_3h <- c(rownames(PA3h_female_de_genes),rownames(PA3h_male_de_genes))
 ego <- enrichGO(gene = genes_PA_3h , OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "all", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
 #Plot GO enrichment analysis
 dotplot(ego, showCategory = 20)
+ggsave(filename = "PA_3H_GO.png",plot = dotplot(ego, showCategory = 20))
 #Convert to Entez IDs
 Ids_entrez <- mapIds(org.Hs.eg.db,keys=genes_PA_3h,column="ENTREZID", keytype="SYMBOL", multiVals="first")
 #Perform KEGG enrichment analysis
 kegg <- enrichKEGG(gene = Ids_entrez, organism = "hsa", pvalueCutoff = 0.05, qvalueCutoff = 0.05)
 dotplot(kegg, showCategory = 20)
-
+ggsave(filename = "PA_3H_KEGG.png",plot = dotplot(kegg, showCategory = 20))
 #24h Pseudomonas
 PA24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hPA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
 colnames(PA24h_male_diffs) <- paste(colnames(PA24h_male_diffs),"Male",sep = "_")
@@ -558,6 +581,8 @@ plot2_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   geom_text(hjust = -0.1, vjust = 0.1) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   theme_bw()
+plot2_24h
+ggsave(filename = "PA_24H.png",plot = plot2_24h)
 ggplotly(plot2_24h)
 
 #Filter marker based on p value and log2fc
@@ -569,11 +594,14 @@ genes_PA_24h <- c(rownames(PA24h_female_de_genes),rownames(PA24h_male_de_genes))
 ego <- enrichGO(gene = genes_PA_24h , OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "all", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
 #Plot GO enrichment analysis
 dotplot(ego, showCategory = 20)
+ggsave(filename = "PA_24H_GO.png",plot = dotplot(ego, showCategory = 20))
 #Convert to Entez IDs
 Ids_entrez <- mapIds(org.Hs.eg.db,keys=genes_PA_24h,column="ENTREZID", keytype="SYMBOL", multiVals="first")
 #Perform KEGG enrichment analysis
 kegg <- enrichKEGG(gene = Ids_entrez, organism = "hsa", pvalueCutoff = 0.05, qvalueCutoff = 0.05)
 dotplot(kegg, showCategory = 20)
+ggsave(filename = "PA_24H_KEGG.png",plot = dotplot(kegg, showCategory = 20))
+
 
 #3H M.Tuberculosis
 MTB3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hMTB", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
@@ -587,23 +615,26 @@ plot3_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   geom_text(hjust = -0.1, vjust = 0.1) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   theme_bw()
+plot3_3h
+ggsave(filename = "MTB_3H.png",plot = plot3_3h)
 ggplotly(plot3_3h)
 
 #Filter marker based on p value and log2fc
-MTB3h_male_de_genes <- MTB3h_male_diffs[PA3h_male_diffs$p_val_Male < 0.01 & abs(PA3h_male_diffs$avg_log2FC_Male) > 0.50, ]
-PA3h_female_de_genes <- PA3h_female_diffs[PA3h_female_diffs$p_val_Female < 0.01 & abs(PA3h_female_diffs$avg_log2FC_Female) > 0.50, ]
-genes_PA_3h <- c(rownames(PA3h_female_de_genes),rownames(PA3h_male_de_genes))
+MTB3h_male_de_genes <- MTB3h_male_diffs[MTB3h_male_diffs$p_val_Male < 0.01 & abs(MTB3h_male_diffs$avg_log2FC_Male) > 0.50, ]
+MTB3h_female_de_genes <- MTB3h_female_diffs[MTB3h_female_diffs$p_val_Female < 0.01 & abs(MTB3h_female_diffs$avg_log2FC_Female) > 0.50, ]
+genes_MTB_3h <- c(rownames(MTB3h_female_de_genes),rownames(MTB3h_male_de_genes))
 
 #Perform GO enrichment analysis
-ego <- enrichGO(gene = genes_PA_3h , OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "all", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
+ego <- enrichGO(gene = genes_MTB_3h , OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "all", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
 #Plot GO enrichment analysis
 dotplot(ego, showCategory = 20)
+ggsave(filename = "MTB_3H_GO.png",plot = dotplot(ego, showCategory = 20))
 #Convert to Entez IDs
-Ids_entrez <- mapIds(org.Hs.eg.db,keys=genes_PA_3h,column="ENTREZID", keytype="SYMBOL", multiVals="first")
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=genes_MTB_3h,column="ENTREZID", keytype="SYMBOL", multiVals="first")
 #Perform KEGG enrichment analysis
 kegg <- enrichKEGG(gene = Ids_entrez, organism = "hsa", pvalueCutoff = 0.05, qvalueCutoff = 0.05)
 dotplot(kegg, showCategory = 20)
-
+ggsave(filename = "MTB_3H_KEGG.png",plot = dotplot(kegg, showCategory = 20))
 #24H M.Tuberculosis
 MTB24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hMTB", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
 colnames(MTB24h_male_diffs) <- paste(colnames(MTB24h_male_diffs),"Male",sep = "_")
@@ -615,21 +646,26 @@ plot3_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   geom_text(hjust = -0.1, vjust = 0.1) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   theme_bw()
+plot3_24h
+ggsave(filename = "MTB_24H.png",plot = plot3_24h)
 ggplotly(plot3_24h)
-#Convert the gene names to Ensembl IDs
-markers_combined$Ids_ensembl <- mapIds(org.Hs.eg.db,keys=markers_combined$gene,column="ENSEMBL", keytype="SYMBOL", multiVals="first")
+
+#Filter marker based on p value and log2fc
+MTB24h_male_de_genes <- MTB24h_male_diffs[MTB24h_male_diffs$p_val_Male < 0.01 & abs(MTB24h_male_diffs$avg_log2FC_Male) > 0.50, ]
+MTB24h_female_de_genes <- MTB24h_female_diffs[MTB24h_female_diffs$p_val_Female < 0.01 & abs(MTB24h_female_diffs$avg_log2FC_Female) > 0.50, ]
+genes_MTB_24h <- c(rownames(MTB24h_female_de_genes),rownames(MTB24h_male_de_genes))
+
 #Perform GO enrichment analysis
-ego <- enrichGO(gene = markers_combined$gene, OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
+ego <- enrichGO(gene = genes_MTB_24h , OrgDb = org.Hs.eg.db, keyType = "SYMBOL", ont = "all", pAdjustMethod = "BH", pvalueCutoff = 0.05, qvalueCutoff = 0.05, readable = TRUE)
+#Plot GO enrichment analysis
+dotplot(ego, showCategory = 20)
+ggsave(filename = "MTB_24H_GO.png",plot = dotplot(ego, showCategory = 20))
 #Convert to Entez IDs
-markers_combined$Ids_entrez <- mapIds(org.Hs.eg.db,keys=markers_combined$gene,column="ENTREZID", keytype="SYMBOL", multiVals="first")
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=genes_MTB_24h,column="ENTREZID", keytype="SYMBOL", multiVals="first")
 #Perform KEGG enrichment analysis
-kegg <- enrichKEGG(gene = markers_combined$Ids_entrez, organism = "hsa", pvalueCutoff = 0.05, qvalueCutoff = 0.05)
-#Plot the ego and kegg results
-goplot(ego, title = "GO enrichment analysis of DE genes of pDC between Sexes",showCategory = 10)
-goplot(kegg)
-
-
-
+kegg <- enrichKEGG(gene = Ids_entrez, organism = "hsa", pvalueCutoff = 0.05, qvalueCutoff = 0.05)
+dotplot(kegg, showCategory = 20)
+ggsave(filename = "MTB_24H_KEGG.png",plot = dotplot(kegg, showCategory = 20))
 ```
 
 
