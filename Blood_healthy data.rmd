@@ -186,6 +186,7 @@ y_genes_mean_expr <- rowMeans(y_genes_expr$RNA)
 y_genes_mean_expr <- y_genes_mean_expr > 0.5
 #Select only the genes names with True value
 y_genes_present_fil <- y_genes_present[y_genes_mean_expr]
+#%%
 # Calculate 95th percentile value for all the genes in y_genes_present
 qval1 <- quantile(pDC_meta@assays$RNA@data["USP9Y",], probs = 0.9625)
 qval2 <- quantile(pDC_meta@assays$RNA@data["EIF1AY",], probs = 0.9625)
@@ -194,7 +195,10 @@ qval6 <- quantile(pDC_meta@assays$RNA@data["RPS4Y1",], probs = 0.9625)
 qval7 <- quantile(pDC_meta@assays$RNA@data["ZFY",], probs = 0.9625)
 qval9 <- quantile(pDC_meta@assays$RNA@data["DDX3Y",], probs = 0.9625)
 qval10 <- quantile(pDC_meta@assays$RNA@data["UTY",], probs = 0.9625)
+Male <- do.call("rbind", Male_list)
 
+Male <- subset(pDC_meta, subset = USP9Y > qval1 | EIF1AY > qval2 | KDM5D > qval5 | RPS4Y1 > qval6 | ZFY > qval7 | DDX3Y > qval9 | UTY > qval10)
+#%%
 #Trying out the filter
 qvals <- vector(length = length(y_genes_present_fil))
 for (i in seq_along(y_genes_present_fil)) {
@@ -202,11 +206,6 @@ for (i in seq_along(y_genes_present_fil)) {
 }
 
 Male <-subset(pDC_meta,subset = EIF1AY > qvals[1] | RPS4Y1 > qvals[2])
-# combine the subsets into a single dataset
-Male <- do.call("rbind", Male_list)
-
-Male <- subset(pDC_meta, subset = USP9Y > qval1 | EIF1AY > qval2 | KDM5D > qval5 | RPS4Y1 > qval6 | ZFY > qval7 | DDX3Y > qval9 | UTY > qval10)
-
 
 #Add sex to the meta data
 Male <- AddMetaData(Male, metadata = data.frame(sex = rep("male", nrow(Male@meta.data))))
