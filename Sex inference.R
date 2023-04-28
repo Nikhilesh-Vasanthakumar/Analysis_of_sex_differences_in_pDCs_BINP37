@@ -38,7 +38,6 @@ DimPlot(disco_blood, reduction = "umap", label = TRUE, label.size = 3, pt.size =
 ggsave("Disco_DimPlot.png", width = 10, height = 10)
 #Save the seurat object
 saveRDS(disco_blood, "disco_blood_v02.rds")
-
 #Subset the data based on the cell type pDC
 pDC <- subset(disco_blood, subset = ct == "pDC")
 gtf_file <- "Homo_sapiens.GRCh38.109.gtf"
@@ -94,6 +93,7 @@ pDC@meta.data$sex <- ifelse(is.na(pDC@meta.data$sex), "Female",
                              ifelse(pDC@meta.data$sex == "", "Female", pDC@meta.data$sex))
 
 pDC <- NormalizeData(pDC)
+pDC <-ScaleData(pDC)
 pDC <- RunPCA(pDC, features = VariableFeatures(object = pDC))
 
 #Perform UMAP

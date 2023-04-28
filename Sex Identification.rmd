@@ -1,0 +1,112 @@
+---
+title: "R Notebook"
+output: html_document
+---
+
+The [R plugin](https://www.jetbrains.com/help/pycharm/r-plugin-support.html) for IntelliJ-based IDEs provides
+handy capabilities to work with the [R Markdown](https://www.jetbrains.com/help/pycharm/r-markdown.html) files.
+To [add](https://www.jetbrains.com/help/pycharm/r-markdown.html#add-code-chunk) a new R chunk,
+```{r}
+#Load the library and data
+library(Seurat)
+
+```
+position the caret at any line or the code chunk, then click "+".
+
+The code chunk appears:
+```{r}
+#lOAD THE gtf file and filter the genes
+gtf <- rtracklayer::import(gtf_file)
+gtf_df <- as.data.frame(gtf)
+
+gene_rows <- gtf_df[gtf_df$seqnames %in% c("X", "Y") & gtf_df$type == "gene", ]
+
+gene_info <- data.frame(gene_name = gene_rows$gene_name, chromosome = gene_rows$seqnames)
+
+x_genes <- gene_info[gene_info$chromosome=="X",]
+y_genes=gene_info[gene_info$chromosome=="Y",]
+
+#Use x_genes and y_genes to filter the pDC object
+gene_names <- rownames(pDC)
+x_genes_present <- intersect(x_genes$gene_namgene_names)
+y_genes_present <- intersect(y_genes$gene_name, gene_names)
+
+subset = gene_names %in% c(x_genes_present, y_genes_present)
+matching_genes <- gene_names[subset]
+#Selecting only the x amd y genes
+
+pDC_meta <- subset(pDC, features = y_genes_present)
+pDC_meta <- subset(pDC_meta, subset = nFeature_RNA > 0)
+Idents(pDC_meta) <- "subject"
+
+
+#Find genes in y_genes present whose Mean expression is >0
+
+#Perform pca and UMAP
+pDC <- NormalizeData(pDC)
+pDC <- RunPCA(pDC, features = VariableFeatures(object = pDC))
+pDC <- FindNeighbors(pDC, dims = 1:20)
+pDC <- FindClusters(pDC, resolution = 0.5)
+pDC <- RunUMAP(pDC, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+
+cluster.average <- AverageExpression(pDC,group.by="subject",return.seurat = TRUE)
+#Add subject to Seurat Object
+cluster.average@meta.data$subject <- colnames(cluster.average)
+# Y genes expression Filter
+y_genes_expr <- AverageExpression(cluster.average, features = y_genes_present,idents = "subject")
+y_genes_mean_expr <- rowMeans(y_genes_expr$RNA)
+#Get a vector of genes names with mean expression >0.5
+y_genes_mean_expr <- y_genes_mean_expr > 0.5
+#Select only the genes names with True value
+y_genes_present_fil <- y_genes_present[y_genes_mean_expr]
+#Temp code
+qvals <- vector(length = length(y_genes_present_fil))
+for (i in seq_along(y_genes_present_fil)) {
+  qvals[i] <- quantile(pDC_meta@assays$RNA@data[y_genes_present_fil[i], ], probs = 0.5165)
+}
+#Filter the cells with qvals >0.85
+Male <-subset(cluster.average,subset = EIF1AY > qvals[1] | RPS4Y1 >qvals[2])
+
+#Filter the genes with qvals >0.85
+Male@meta.data$sex <- "Male"
+cluster.average@meta.data$sex <- NA
+
+matching_subjects <- intersect(Male@meta.data$subject, cluster.average@meta.data$subject)
+for (subject in matching_subjects) {
+  cluster.average@meta.data[cluster.average@meta.data$subject == subject, "sex"] <- "Male"
+}
+cluster.average@meta.data$sex <- ifelse(is.na(cluster.average@meta.data$sex), "Female", cluster.average@meta.data$sex)
+#Normalize the data
+cluster.average <- NormalizeData(cluster.average)
+#Find Variable Features
+cluster.average <- FindVariableFeatures(object=cluster.average)
+#Perform PCA
+cluster.average <- RunPCA(cluster.average, features = VariableFeatures(object = cluster.average))
+#Find Neighbors
+cluster.average <- FindNeighbors(cluster.average, dims = 1:20)
+#Find Clusters
+cluster.average <- FindClusters(cluster.average, resolution = 0.5)
+#Perform UMAP
+cluster.average <- RunUMAP(cluster.average, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Plot the Heatmap
+DoHeatmap(cluster.average,features= c("EIF1AY","RPS4Y1"),group.by = c('sex'),size = 2,draw.lines =FALSE)
+ggsave("Classify_Heatmap.png",width = 10,height = 10)
+
+#Add the cluster average sex information to the pDC object
+subject_sex <- cluster.average@meta.data[, c("subject", "sex")]
+
+#Add the column to the pDC object
+pDC@meta.data <- merge(pDC@meta.data, subject_sex, by = "subject", all.x = TRUE)
+#Save the pDC object
+saveRDS(pDC, file = "pDC_final_sex.rds")
+
+
+```
+
+
+```{r}
+
+```
+
+Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
+Click the **Knit and Open Document** to build and preview an output.
