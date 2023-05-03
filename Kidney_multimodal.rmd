@@ -1,0 +1,45 @@
+---
+title: "Kidney SC_RNA and ATAC seq analysis"
+output: html_document
+---
+
+```{r}
+library(Seurat)
+library(Signac)
+library(SeuratWrappers)
+
+#Load the data
+atac <- readRDS("Kidney_atacseq.rds")
+rna <- readRDS("Kidney_scrna.rds")
+```
+position the caret at any line or the code chunk, then click "+".
+
+The code chunk appears:
+```{r}
+#Since the data is already normalized we can skip this step
+rna <-NormalizeData(rna, verbose = FALSE)
+rna<-ScaleData(rna,features = rownames(rna))
+#Do pca
+rna<-RunPCA(rna,features = rownames(rna),verbose = FALSE)
+plan(strategy = "multicore", workers = 4)
+#Find Neighbors
+rna<-FindNeighbors(rna,verbose = FALSE)
+#Find clusters
+rna<-FindClusters(rna,verbose = FALSE)
+#Do umap
+rna <- RunUMAP(rna, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+DimPlot(rna, reduction = "umap",group.by = 'cell_type',label=TRUE,repel = TRUE)
+```
+
+```{r}
+
+```
+
+Process them seperately to preprocess and subset pDCs
+```{r}
+#Save dgcMatrix as Seurat object
+pbmc <- CreateSeuratObject(sm, assay = "RNA", min.cells = 3, min.features = 200)
+```
+
+Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
+Click the **Knit and Open Document** to build and preview an output.

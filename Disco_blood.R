@@ -38,6 +38,7 @@ DimPlot(disco_blood, reduction = "umap", label = TRUE, label.size = 3, pt.size =
 ggsave("Disco_DimPlot.png", width = 10, height = 10)
 #Save the seurat object
 saveRDS(disco_blood, "disco_blood_v02.rds")
+disco_blood<- readRDS("disco_blood_v02.rds")
 #Subset the data based on the cell type pDC
 pDC <- subset(disco_blood, subset = ct == "pDC")
 gtf_file <- "Homo_sapiens.GRCh38.109.gtf"

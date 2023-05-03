@@ -1,6 +1,6 @@
 # Prepare the data
 X <- t(pDC@assays$RNA@data) # gene expression data
-y <- as.numeric(pDC@meta.data$gender == "M") # binary labels (0 for female, 1 for male)
+y <- as.numeric(pDC@meta.data$sex == "Male") # binary labels (0 for female, 1 for male)
 #Filter out the NA values and corresponding cells
 na_idx <- which(is.na(y))
 X <- X[-na_idx, ]
