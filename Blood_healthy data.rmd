@@ -386,6 +386,8 @@ DoHeatmap(cluster.average,features= c("EIF1AY","RPS4Y1"),group.by = c('sex'),siz
 ggsave("pDC_average&sex_heatmap.png")
 saveRDS(cluster.average, file = "cluster.average_pDC_bloodhealthy.rds")
 
+
+DoHeatmap(cluster.average,features=c("TSPO","KLF4","HSP90AA1","CD36","IL1B","AIF1","SOD2"),draw.lines = T)
 DoHeatmap(cluster.average,
           features= c("EIF1AY","RPS4Y1"),
           group.by = c('sex'),
@@ -455,7 +457,6 @@ ggsave("pDC._pseudotime.png")
 #Perform Gene set enrichment analysis and UMAP visualization using combined column
 #Combine sex and subject column into a single column and add it to the meta data
 library(EnhancedVolcano)
-library(enrichplot)
 library(AnnotationDbi)
 library(clusterProfiler)
 library(org.Hs.eg.db)
@@ -486,7 +487,6 @@ gene_list <- sort(gene_list,decreasing = TRUE)
 ego<-  gseGO(geneList=gene_list,
              ont ="BP",
              keyType = "SYMBOL",
-             nPerm = 10000,
              minGSSize = 3,
              maxGSSize = 800,
              pvalueCutoff = 0.05,
@@ -494,7 +494,7 @@ ego<-  gseGO(geneList=gene_list,
              OrgDb = org.Hs.eg.db,
              pAdjustMethod = "none")
 #Plot GO enrichment analysis
-dotplot(ego,x="enrichmentScore", showCategory = 20)
+dotplot(ego,x="enrichmentScore",showCategory = 20)
 ggsave("GO_enrichment_UT.png")
 #Plot upset plot of enriched GO terms
 upsetplot(ego,y="enrichmentScore",showCategory = 20)

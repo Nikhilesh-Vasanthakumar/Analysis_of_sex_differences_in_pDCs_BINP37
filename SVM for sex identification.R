@@ -22,3 +22,6 @@ pred_y <- predict(model, test_X, probability = TRUE)
 pred_y_class <- ifelse(pred_y > 0.5, 1, 0)
 # Compare predicted labels with true labels
 accuracy <- mean(pred_y_class == test_y)
+
+#Save the model
+saveRDS(model, file = "svm_model.rds")

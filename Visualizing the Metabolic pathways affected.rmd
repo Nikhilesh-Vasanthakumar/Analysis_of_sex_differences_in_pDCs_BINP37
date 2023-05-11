@@ -1,0 +1,289 @@
+---
+title: "Visualizing GO and KEGG Expression through Heatmap"
+output: html_document
+---
+
+```{r}
+#Subset the cluster.average to select only the UT individuals
+UT <- subset(pDC,subset = treatment == 'UT')
+cluster.average_UT <-AverageExpression(UT,group.by = 'subject',return.seurat = T)
+#Normalize the data
+cluster.average_UT <- NormalizeData(cluster.average_UT)
+#Scale the data
+cluster.average_UT <- ScaleData(cluster.average_UT)
+#Find Variable Genes
+cluster.average_UT <- FindVariableFeatures(cluster.average_UT)
+#Perform a PCA
+cluster.average_UT <- RunPCA(cluster.average_UT,dims=1:20)
+#Find Neighbors
+cluster.average_UT <- FindNeighbors(cluster.average_UT)
+#Find Clusters
+cluster.average_UT <- FindClusters(cluster.average_UT,resolution = 0.5)
+
+#Run UMAP
+cluster.average_UT <- RunUMAP(cluster.average_UT, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+
+subject_sex_lookup <- pDC@meta.data[, c("subject", "sex")]
+# Remove rows with NAs
+subject_sex_lookup <- na.omit(subject_sex_lookup)
+# Remove duplicates
+subject_sex_lookup <- unique(subject_sex_lookup)
+# Order by subject
+subject_sex_lookup <- subject_sex_lookup[order(subject_sex_lookup$subject),]
+#Add subject column to cluster.average_UT
+cluster.average_UT@meta.data$subject <-names(Idents(cluster.average_UT))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_UT@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_UT@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_UT@meta.data$sex <- rep(NA, nrow(cluster.average_UT@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_UT@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+mapal <- colorRampPalette(RColorBrewer::brewer.pal(11,"RdBu"))(256)
+
+#GO-nitric oxide metabolic process(Gene list from the core_enrichment genes)
+DoHeatmap(cluster.average_UT,features=c("TSPO","KLF4","HSP90AA1","CD36","IL1B","AIF1","SOD2"),group.by = 'sex',draw.lines = T,disp.min = -1,disp.max = 1)+scale_fill_gradientn(colours = rev(mapal))
+
+
+DoHeatmap(pDC_combined,features = c("TSPO","KLF4","HSP90AA1","CD36","IL1B","AIF1","SOD2"),group.by = 'sex.treatment',disp.min = -1, disp.max = 1)
+#Using all the genes from the pathway
+DoHeatmap(cluster.average_UT,features = c("TLR2", "NOS1", "CYP1B1", "CYB5R3", "DDAH2", "NQO1", "GCH1", "CYB5B", "NOS3", "ARG2", "MTARC1", "TLR4", "TICAM1", "SLC7A6", "KLRK1", "AKT1", "POR", "CPS1", "MTARC2", "RORA", "GCHFR", "ACP5", "SPR", "NOS2", "CAV1"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#KEGG Carbon metabolism
+DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1"),group.by = 'sex')
+DoHeatmap(pDC_combined,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1"),group.by = 'sex')
+#Glycolysis
+DoHeatmap(cluster.average_UT,features = c("GAPDH","ADH5","ADPGK","PGK1","LDHA","ALDH3B1","MINPP1","PGAM1","PFKM","PFKL","ALDH9A1","ALDH2","PKM","GPI","ALDH7A1","PGAM4","FBP1","ALDOA","ENO2","LDHB","ALDH1B1","HK3"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#TCA cycle
+DoHeatmap(cluster.average_UT,features = c("PDHB","MDH2","OGDH","SDHC","FH","DLAT","ACO2","SDHA","IDH3G","ACLY","CS","SUCLG1","DLD","SDHD","IDH3A"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+# Oxidative phosphorylation
+DoHeatmap(cluster.average_UT,features = c("NDUFA11","COX5B","ATP5ME","COX8A","UQCRQ","NDUFB1","NDUFA1","ATP5MC2","NDUFS6","COX7C","UQCR11","COX6B1","NDUFB3","ATP5MG","UQCRH","COX7B2"),group.by = 'sex',disp.min = -1.5,disp.max = 1.5)
+
+#Upregulation of Microphilial/Macrophage activation_GO
+DoHeatmap(cluster.average_UT,features = c("CCL3", "STAP1","CTSC","CCL3","MIR142"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#IL-6 Production
+DoHeatmap(cluster.average_UT,features =c("ARRB2","TNFAIP3","PYCARD","TYROBP","CD36","IL1B","AIF1"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#IL-17 Production
+DoHeatmap(cluster.average_UT,features=c("RFTN1","SLC7A5","IFNG" ,"LILRB2", "AIF1",  "AKIRIN2" ,"CD36", "EREG", "ZBTB20", "HYAL2" ,"APP" ,"TSLP" ,"F2R","PTAFR","SETD4","NOS2","TLR3","HMGB1"),group.by='sex',disp.min = -1,disp.max = 1)
+
+#Carbon Metabolism-KEGG
+DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1" ),group.by = 'sex',disp.min = -2,disp.max = 2)
+#Biosynthesis of amino acids-KEGG
+DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","CSF2RB","MARCH1"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#Cholesterol Metabolism-KEGG
+DoHeatmap(cluster.average_UT,features = c("CCT3","HNRNPA2B1","LIMD2","RPL28"),group.by = 'sex',disp.min = -1.5,disp.max = 1.5)
+
+#Pentose Phosphate Pathway-KEGG
+DoHeatmap(cluster.average_UT,features = c("OCIAD1","RAB21","PTGDS"),group.by = 'sex',disp.min = -1,disp.max = 1)
+```
+
+position the caret at any line or the code chunk, then click "+".
+
+The code chunk appears:
+```{r}
+#CA
+# Subset pDC_CA
+pDC_CA <-subset(pDC_combined,subset= treatment == '3hCA')
+cluster.average_3hCA <-AverageExpression(pDC_CA,group.by = 'subject' ,return.seurat= T)
+#Normalize the data
+cluster.average_3hCA <- NormalizeData(cluster.average_3hCA)
+#Scale the data
+cluster.average_3hCA <- ScaleData(cluster.average_3hCA)
+#Find variable genes
+cluster.average_3hCA <- FindVariableFeatures(cluster.average_3hCA)
+#Run PCA
+cluster.average_3hCA <- RunPCA(cluster.average_3hCA,dims=1:20)
+#Find Neighbors
+cluster.average_3hCA <- FindNeighbors(cluster.average_3hCA)
+#Find Clusters
+cluster.average_3hCA <- FindClusters(cluster.average_3hCA, resolution = 0.5)
+#Run UMAP
+cluster.average_3hCA <- RunUMAP(cluster.average_3hCA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Add the sex and subject information.
+subject_sex_lookup <- pDC@meta.data[, c("subject", "sex")]
+# Remove rows with NAs
+subject_sex_lookup <- na.omit(subject_sex_lookup)
+# Remove duplicates
+subject_sex_lookup <- unique(subject_sex_lookup)
+# Order by subject
+subject_sex_lookup <- subject_sex_lookup[order(subject_sex_lookup$subject),]
+#Add subject column to cluster.average_3hCA
+cluster.average_3hCA@meta.data$subject <-names(Idents(cluster.average_3hCA))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_3hCA@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_3hCA@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_3hCA@meta.data$sex <- rep(NA, nrow(cluster.average_3hCA@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_3hCA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+# Male
+#Regulation of Viral genome replication-GO
+DoHeatmap(cluster.average_3hCA,features = c("ISG15","ISG20","MX1","IFI16","PLSCR1","OAS2","EIF2AK2","IFIH1","ADAR","OAS1"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Using all the genes for the gene ontology
+DoHeatmap(cluster.average_3hCA, features = c("DDB1", "PKN2", "PPIE", "AICDA", "TRIM6", "OAS2", "IFI16", "APOBEC3B", "PPIA", "ZNFX1", "HMGA2", "CNOT7", "CD28", "BANF1", "VAPB", "STAU1", "BCL2", "ISG20", "CXCL8", "TASOR", "MX1", "N4BP1", "IFIT5", "OAS1", "FAM111A", "TMEM39A", "EIF2AK2", "IFNB1", "HACD3", "LARP1", "TRIM28", "SRPK1", "GBP7", "RAD23A", "APOBEC3C", "APOBEC3F", "FKBP6", "PPARA", "CCL5", "RESF1", "SHFL", "TOP2A", "TRIM38", "MPHOSPH8", "SETDB1", "TNIP1", "IFIH1", "ZC3HAV1", "APOBEC3D", "ADARB1", "ADAR", "PABPC1", "APOBEC3G", "IFITM1", "NOTCH1", "IFIT1", "APOBEC3H", "SRPK2", "DDX3X", "RSAD2", "BST2", "RNASEL", "PDE12", "BTBD17", "MORC2", "IFNL3", "TNF", "OAS3", "PPIH", "MAVS", "APOBEC3A", "PROX1", "OASL", "TARBP2", "LTF", "ISG15", "SLPI", "TOP2B", "ILF3", "INPP5K", "PPID", "PLSCR1", "IFITM2", "IFITM3"), group.by = 'sex', disp.min = -2, disp.max = 2)
+
+#Defense response to virus-GO
+DoHeatmap(cluster.average_3hCA,features = c("CXCL10","ISG15","PMAIP1","BIRC3","ISG20","IFIT2","MX1","IFIT3","IFI44L","IFI16","PLSCR1","STAT1","OAS2","EIF2AK2","NT5C3A","IFIH1","ADAR","HERC5","IRF1","IFI6","TANK","OAS1","MX2"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#All the genes
+gene_list <- c("IFNL4", "DDX60L", "TLR2", "CARD9", "CASP1", "IL12B", "DDX21", "DHX15", "FADD", "TRAF3", "DHX58", "FCN3", "TBK1", "TRIM6", "OAS2", "TRIM52", "DHX36", "IFI16", "LILRB1", "AGBL4", "TBKBP1", "APOBEC3B", "DMBT1", "DEFA3", "DEFA1", "GBP2", "GBP1", "NT5C3A", "ATG7", "RIGI", "RTP4", "ISG20", "HERC5", "UBE2W", "CD207", "RELA", "BECN1", "IL6", "MLKL", "AZU1", "PYCARD", "DDIT4", "RIPK3", "STAT1", "ZBP1", "CD40", "IRF3", "IFIT5", "TLR7", "TRIM27", "UNC13D", "SLFN13", "DHX16", "OAS1", "DDX60", "IL10RB", "ABCF3", "EIF2AK2", "TRIM56", "IFNA2", "IFNA10", "IFNA21", "IFNA5", "IFNA17", "IFNB1", "TRIM28", "GBP7", "UBE2N", "PRF1", "PML", "IKBKE", "APOBEC3C", "AZI2", "APOBEC3F", "GARIN5A", "UNC93B1", "TRIM8", "STAT2", "BCL2L1", "STING1", "URS0000338542_9606", "CLPB", "sting_human-1", "alt-cbc_human", "MYD88", "MAP3K14", "TRIM22", "IFNE", "USP44", "NLRC5", "IFNL1", "IFIH1", "SETD2", "EIF2AK4", "IRF9", "ZC3HAV1", "NLRP9", "USP29", "APOBEC3D", "TANK", "IRF5", "ADARB1", "ADAR", "RNF185", "APOBEC3G", "GBP3", "TRIM41", "IFNGR2", "MBL2", "RSAD2", "BST2", "GPAM", "TLR8", "IFNK", "IRF7", "IFNL2", "IFNL3", "TNF", "OAS3", "NLRP6", "IFNG", "CARD8", "F2RL1", "MAVS", "USP20", "PARP9", "APOBEC3A", "OASL", "IFNAR2", "TRIM26", "IFNA16", "IFNW1", "EXOSC5", "POLR3A", "GBP5", "IFI27", "IRF2")
+
+DoHeatmap(cluster.average_3hCA, features = gene_list, group.by = 'sex', disp.min = -1, disp.max = 1)
+
+#Negative Regulation of Immune System Process-GO
+DoHeatmap(cluster.average_3hCA,features=c("IL2RA","IL7R","ISG15","AHR","IFI16","PARP14","IL4I1","ADTRP","LPXN","PAG1","CCL3","HLA-A","ADAR","IRF1","HLA-F","RUNX3","CD47","USP18","OAS1","HLA-E","CASP3","CCL2","HLA-DRB1","SERPINB9","SAMSN1","BTN2A2","NMI","TNFAIP3","ELF1"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#Cell Death-GO
+DoHeatmap(cluster.average_3hCA, features = c("CXCL10","OPN3","CTSC","TXN","BCL2A1","IL2RA","ENDOG","IL7R","CFLAR","BTG1","GCLM","SLC7A11","NFKB1","CDKN1A","PMAIP1","BIRC3","IFIT2","MX1","IFIT3","SQSTM1","AHR","IFI16","PLSCR1","TNFSF10","PTPN1","BID","ATF5","STAT1","TNFAIP8","EIF2AK2","AKR1C3","KMO","MARCKS","CCR7","ARL6IP5","GZMB","CCL3","NINJ1","SRGN","XAF1","STK4","ADAR","EMP3","IRF1","IFI6","HLA-F","TAF9","CASP3","TRAF1","PKM","SP100","DNAJA1","CCL2","CD38","ACTN4","FAS","NUP62","ATF4","SERPINB9","RTN4","RBCK1","HSP90B1"), group.by = 'sex', disp.min = -1, disp.max = 1)
+#Cell Migration-GO
+DoHeatmap(cluster.average_3hCA, features = c("SMPD3", "CCL5", "AIF1", "B4GALT1", "CORO1A", "MAP2K3", "RAC2", "SELPLG", "PHACTR1", "SERPINF1", "GPX1", "LDLRAD4", "DUSP1", "PPBP", "PYCARD", "ACTG1", "KLF4", "ARHGDIB", "S100A8", "NR4A2", "NR4A1", "S100A9", "MYADM", "ID1", "RGCC", "CXCR4", "FCER1G"), group.by = "sex", disp.min = -1, disp.max = 1)
+#Skeletal Muscle cell differentitaion-GO
+DoHeatmap(cluster.average_3hCA,features = c("NR4A1","FOS"),group.by="sex",disp.min = -1,disp.max = 1)
+#Using All the genes
+DoHeatmap(cluster.average_3hCA,features =c("HIVEP3","MED20","SAP30","LEMD2","GTF3C5","NR4A1","SMYD1","MAFF","MEF2D","MEGF10","HEYL","PHOX2B","VAX1","SELENON","BCL9L","BTG2","ANKRD33","FOXN2","KRAS","CDON","FOS","DMRTA2","MYF6","KLF5","SCX","NOTCH1","MYF5","WNT3A","CITED2","SHH","ATF3","HMG20B","KLHL40","BCL9","ZNF689","EGR1","EGR2","RB1","EMD","PAX5","BARX2","SOX11","SOX8","MSTN","ASB2","MYOD1","COPS2"),group.by ='sex',disp.min = -1,disp.max = 1)
+#CYTOPLASMIC TRANSLATION-GO
+DoHeatmap(cluster.average_3hCA,features = c("RPS27A","FAU","EIF3G","RPS20","RPL38","RPS21","RPS27","RPL22L1","RPL36","RPS19","RPL36A","YBX1","RPS11","EIF2S3","RPL18A","RPS10","RPL17","RPS28","RPS6","RPL23","RPL23A","RPS16","RPS12","RPL37A","RPL3","RPL35","RPLP2","RPL9","RPL35A","RPL8","RPL27","RPL7","RPLP0","RPL19","RPL37","RPS23","RPS8","RPS24","RPS4X","UBA52","RPS14","RPS25","EIF3E","RPS13","RPL32","RPS5","RPL30","RPL29","RPL11","RPL13","RPS3","RPL28","RPS3A","RPS15A","EIF4B","RPL18","RPS18","RPL14","RPL22","RPL27A","RPL31","RPS2","EIF3D","RPS15","RPL10","RPS7","RPL6","RPL12","RPS9","RPL26","RPL15","EIF3F","RPL4","RPL10A","MIF4GD","EIF3K","RPL13A","EIF3L","EIF3H","RPL5","RPSA","RPL7A"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#KEGG-RIG 1 LIKE RECEPTOR SIGNALLING
+DoHeatmap(cluster.average_3hCA,features=c("ADAR" ,"CXCL10" ,"IFIH1" ,"ISG15" ,"NFKB1" ,"TANK"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Ferroptosis-Kegg
+DoHeatmap(cluster.average_3hCA,features = c("FTH1" ,"FTL" ,"GCLM" ,"SAT1" ,"SLC7A11"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#AutoImmune Thyroid Disease
+DoHeatmap(cluster.average_3hCA,features=c("FAS", "GZMB", "HLA-A", "HLA-DQA1", "HLA-DQA2", "HLA-DRB1", "HLA-E", "HLA-F"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Apoptosis-kegg
+DoHeatmap(cluster.average_3hCA,features = c("ATF4", "BCL2A1", "BID", "BIRC3", "CASP3", "CFLAR", "CTSC", "ENDOG", "FAS", "GZMB", "IL3RA", "NFKB1", "PMAIP1", "TNFSF10", "TRAF1"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Ribosome-KEGG
+DoHeatmap(cluster.average_3hCA,features=c("MRPL23", "RPL10", "RPL10A", "RPL11", "RPL12", "RPL13", "RPL13A", "RPL14", "RPL15", "RPL17", "RPL18", "RPL18A", "RPL19", "RPL21", "RPL22", "RPL23", "RPL23A", "RPL26", "RPL27", "RPL27A", "RPL28", "RPL29", "RPL3", "RPL30", "RPL31", "RPL32", "RPL35", "RPL35A", "RPL36", "RPL37", "RPL37A", "RPL38", "RPL4", "RPL5", "RPL6", "RPL7", "RPL7A", "RPL8", "RPL9", "RPLP0", "RPLP2", "RPS10", "RPS11", "RPS12", "RPS13", "RPS14", "RPS15", "RPS15A", "RPS16", "RPS18", "RPS19", "RPS2", "RPS20", "RPS23", "RPS24", "RPS25", "RPS26", "RPS27", "RPS27A", "RPS28", "RPS3", "RPS3A", "RPS4X", "RPS4Y1", "RPS5", "RPS6", "RPS7", "RPS8", "RPS9", "RPSA", "UBA52"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Fc Epsilon RI Signaling Pathway-kegg
+DoHeatmap(cluster.average_3hCA,features = c("FCER1G", "MAP2K3" ,"RAC2"),group.by = 'sex',disp.min = -1,disp.max = 1)
+```
+
+Type any R code in the chunk, for example:
+```{r}
+#CA24h
+#Subset from pDC_combined
+pDC_combined_CA24h <- subset(pDC_combined, subset = treatment=='24hCA')
+#Write the same code as the previous block
+cluster.average_24hCA <- AverageExpression(pDC_combined_CA24h,group.by = 'subject',return.seurat = T)
+#Normalize the data
+cluster.average_24hCA <- NormalizeData(cluster.average_24hCA)
+#Find variable genes
+cluster.average_24hCA <- FindVariableFeatures(cluster.average_24hCA,selection.method = 'vst',nfeatures = 2000)
+#Find PCA
+cluster.average_24hCA <- RunPCA(cluster.average_24hCA)
+#Find Neighbors
+cluster.average_24hCA <- FindNeighbors(cluster.average_24hCA, dims = 1:20)
+#Find clusters
+cluster.average_24hCA <- FindNeighbors(cluster.average_24hCA, dims = 1:20)
+#Run UMAP
+cluster.average_24hCA <- cluster.average_3hCA <- RunUMAP(cluster.average_3hCA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+
+#Add the sex information and subject information.
+#Add subject column to cluster.average_24hCA
+cluster.average_24hCA@meta.data$subject <-names(Idents(cluster.average_24hCA))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_24hCA@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_24hCA@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_24hCA@meta.data$sex <- rep(NA, nrow(cluster.average_24hCA@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_24hCA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+#MALE-GO
+#Farensyl diphosphate metabolic process - GO
+DoHeatmap(cluster.average_24hCA,features=c("FDPS","HMGCS1","FDFT1"),group.by = 'sex',disp.min = -2,disp.max = 2)
+#Nitric oxide biosynthetic process - GO
+DoHeatmap(cluster.average_24hCA,features = c("EEF1D","EIF4A1","DNAJC3","EEF1A1","EIF3K","MYCL","PABPC1","RPLP1","RPL41","CCND3","MIF4GD","RPL24","TCF4","RPS25","RRBP1","PIM2","IL1B","IFI16","RPL18","RPS29","RPL12","JMJD1C","CCNL1","RPL10","RPLP0","FAU","RPL11","CXXC5","EEF2","NFKBIA","RPL38","RPS12","RPS27A","EIF3F","POLB","CSRNP1","RPL7A","ZFAT","RPS5","ZNF791","RBM3","RPSA","IRF4","CDKN2D","SERP1","USF2","PRKCB","RPL15","RPS21","RPL19","SP110","RPL13A","RPL31","GAS6","RPL27A","RPS9","RPL35A","RPL39","RPL36A","FOSL2","RPS3","JUND","S100A8","RPL18A","RPL21","RPL37","ARID5A","RPS11","NR4A3","RPL37A","EIF1","RPL4","RPS23","RPLP2","RPL7","EIF3L","RPS2","IER2","RPS4X","RPL23A","RPL30","S100A9","SIK1","RPS27","HES4","RPL29","RPL9","RPL35","RPL22","RPL26","RPS16","RPS28","MYBL2","RPL34","RPL27","RPS10","RPS24","VIM","RPL23","RPS7","RPS15A","RPS13","CD4","RPS6","RPS14","SPIB","RPL17","ODC1","KLF10","RPL32","SMPD3","NR4A1","RPL10A","RPL5","RPL13","EZR","GUK1","MAP2K3","APP","NR3C1","RPL3","EEF1B2","SKIL","TSC22D3","JUNB","RGCC","ARID3A","RPS8","RPS18","COMMD6","RPL6","XBP1","NR4A2","TGFB1","NCF1","RPS3A","PLAC8","ZFP36L2","IRF7","FOSB","IRF8","KDM6B","ZNF331","BTG2","PPP1R15A","RGS2","ZFP36"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Gene Expression- GO
+DoHeatmap(cluster.average_24hCA,features = c("TCF4","SRSF6","RPS25","MIR142","RRBP1","PIM2","IL1B","SAMHD1","IFI16","RPL18","SRSF3","RPS29","SPON2","RPL12","JMJD1C","CCNL1","RPL10","ISCA1","RPLP0","FAU","RPL11","CXXC5","EEF2","SRGN","NFKBIA","RPL38","RPS12","RPS27A","EIF3F","POLB","CSRNP1","RPL7A","ZFAT","RPS5","ZNF791","RBM3","RPSA","SPCS1","IRF4","TNFRSF21","SERP1","USF2","LAPTM5","FBL","PRKCB","RPL15","RPS21","RPL19","MBP","SP110","RPL13A","RPL31","AHNAK","GAS6","RPL27A","ZC3HAV1","RPS9","RPL35A","GAPT","RPL39","RPL36A","FOSL2","RPS3","JUND","S100A8","RPL18A","RPL21","RPL37","ARID5A","RPS11","NR4A3","RPL37A","ISG15","SLC7A5","EIF1","RPL4","CCL3","RPS23","SRSF7","RPLP2","RPL7","EIF3L","RPS2","IER2","RPS4X","RPL23A","RPL30","S100A9","SIK1","RPS27","HES4","RPL29","RPL9","RPL35","RPL22","RPL26","RPS16","RPS28","DNAJB9","MYBL2","RPL34","RPL27","RPS10","RPS24","VIM","RPL23","TYROBP","RPS7","RPS15A","RPS13","CD4","RPS6","RPS14","SPIB","RPL17","KLF10","PTPRS","RPL32","GPX1","SERPINF1","NR4A1","RPL10A","RPL5","RPL13","EZR","MAP2K3","MIR24-2","MYADM","APP","NR3C1","WNT10A","RPL3","EEF1B2","AGPAT2","LMNA","SKIL","SNHG7","TSC22D3","ERP29","JUNB","RGCC","ARID3A","RBM38","MZB1","RPS8","RPS18","THBD","COMMD6","RPL6","XBP1","NR4A2","TGFB1","NCF1","RPS3A","PLAC8","NFKBID","ZFP36L2","CYBA","CRIP1","IRF7","FOSB","IRF8","KDM6B","PLD4","ZNF331","FCER1G","LILRA4","BTG2","PPP1R15A","RGS2","ZFP36","PTGDS"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Female Pregnanacy- GO
+DoHeatmap(cluster.average_24hCA,features = c("UCP2","TIMP1","IL1B","ARHGDIB","CTSB","RPL29","JUNB","THBD","FOS","FOSB","RGS2"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#rRNA processing- GO
+DoHeatmap(cluster.average_24hCA,features =c ("RPS19", "RPS15", "RPL14", "RPS25", "FBL", "RPL11", "RPS21", "RPL7A", "RPL35A", "RPS27", "RPL7", "RPS16", "RPS7", "RPS28", "RPL35", "RPL27", "RPS6", "RPS14", "RPL26", "RPS24", "RPL5", "RPL10A", "RPS8"),group.by='sex',disp.min = -1,disp.max = 1)
+#KEGG
+#Glycolysis / Gluconeogenesis-KEGG
+DoHeatmap(cluster.average_24hCA,features = c("ALDH2", "ALDOA", "ENO1" ,"GAPDH" ,"LDHA" ,"PFKL" ,"PGAM1","PGK1","PKM","TPI1"),group.by='sex',disp.min = -1,disp.max = 1)
+#Trepenoid backbone biosynthesis-KEGG
+DoHeatmap(cluster.average_24hCA,features=c("ACAT2","FDPS","HMGCS1", "IDI1" ,"MVD"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Covid 19 -Kegg
+DoHeatmap(cluster.average_24hCA,features=c("FAU", "IL1B", "ISG15", "MX1", "MX2", "NFKBIA", "PRKCB", "RPL10", "RPL10A", "RPL11", "RPL12", "RPL13", "RPL13A", "RPL14", "RPL15", "RPL17", "RPL18", "RPL18A", "RPL19", "RPL21", "RPL22", "RPL23", "RPL23A", "RPL24", "RPL26", "RPL27", "RPL27A", "RPL28", "RPL29", "RPL3", "RPL30", "RPL31", "RPL32", "RPL34", "RPL35", "RPL35A", "RPL36A", "RPL37", "RPL37A", "RPL38", "RPL39", "RPL4", "RPL41", "RPL5", "RPL6", "RPL7", "RPL7A", "RPL9", "RPLP0", "RPLP1", "RPLP2", "RPS10", "RPS11", "RPS12", "RPS13", "RPS14", "RPS15", "RPS15A", "RPS16", "RPS18", "RPS19", "RPS2", "RPS20", "RPS21", "RPS23", "RPS24", "RPS25", "RPS27", "RPS27A", "RPS28", "RPS29", "RPS3", "RPS3A", "RPS4X","RPS4Y1","RPS5","RPS6", "RPS7" ,"RPS8", "RPS9", "RPSA"),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Valine, leucine and isoleucine degradation-KEGG
+DoHeatmap(cluster.average_24hCA,features=c("ACAT2", "ALDH2", "HMGCS1" ,"IL4I1"),group.by = 'sex',disp.min = -1,disp.max = 1)
+```
+
+```{r}
+#Subset the 3hPA data from pDC
+pDC_combined_PA3h <- subset(pDC_combined, subset = treatment=='3hPA')
+cluster.average_3hPA <- AverageExpression(pDC_combined_PA3h, group.by = 'subject',return.seurat = TRUE)
+#Normalize the data
+cluster.average_3hPA <- NormalizeData(cluster.average_3hPA)
+#Find variable genes
+cluster.average_3hPA <- FindVariableFeatures(cluster.average_3hPA, selection.method = "vst", nfeatures = 2000)
+#Find PCA
+cluster.average_3hPA <- RunPCA(cluster.average_3hPA,features =rownames(cluster.average_3hPA))
+#Find Neighbors
+cluster.average_3hPA <- FindNeighbors(cluster.average_3hPA, dims = 1:20)
+#Find Clust
+cluster.average_3hPA <- FindClusters(cluster.average_3hPA, resolution = 0.5)
+#Find UMAP
+cluster.average_3hPA <- RunUMAP(cluster.average_3hPA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Add subject column to cluster.average_3hhPA
+cluster.average_3hPA@meta.data$subject <-names(Idents(cluster.average_3hPA))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_3hPA@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_3hPA@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_3hPA@meta.data$sex <- rep(NA, nrow(cluster.average_3hPA@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_3hPA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+
+#regulation of lymphocyte chemotaxis
+DoHeatmap(cluster.average_3hPA,features = c("CXCL10","CCL2","CCL4","CCL3"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#NK cell chemotaxix -GO
+DoHeatmap(cluster.average_3hPA,features =c ("CCL2","CCL4","CCL3"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#Calcium Ion-GO
+DoHeatmap(cluster.average_3hPA,features = c("CXCL10","CCL2","VMP1","CCL4","CCL3"),group.by = 'sex')
+
+#Cytoplasmic Translation-GO
+DoHeatmap(cluster.average_3hPA,features=c("SH3BGRL", "YBX1", "RPS26", "RPL35", "RPL41", "RPL9", "RPS25", "RPS5", "RPL18A", "RPL22", "RPL30", "RPS4X", "RPL11", "RPS6", "RPL21", "RPL35A", "RPL37A", "RPS3", "RPL14", "RPL34", "RPS27", "RPL13", "RPL31", "RPL32", "RPS14", "RPL27", "RPL23", "RPS15", "RPS18", "RPS9", "EIF2S3", "RPS8", "RPS13", "RPL12", "RPS15A", "RPS24", "RPL18", "RPS28", "RPS23", "EIF3D", "RPL27A", "RPL10", "RPS2", "RPL3", "RPL26", "RPS7", "RPL7", "EIF3E", "RPLP0", "RPL15", "RPL13A", "RPL23A", "RPS3A", "RPL7A", "EIF4B", "RPL10A", "RPL4", "RPL6", "RPL5", "EIF3F", "EIF3H", "EIF3L", "RPSA", "MIF4GD"),group.by='sex',disp.min = -1,disp.max = 1)
+
+#Cold Induced thermogenesis-GO
+DoHeatmap(cluster.average_3hPA,features =c("IRF4","CXCR4","KDM6B","UCP2","PLAC8"),group.by = 'sex',disp.min = -1,disp.max = 1)
+
+#Dicarboxylic acid metabolic Process-GO
+DoHeatmap(cluster.average_3hPA,features = c("SLC7A11","GCLM","MTHFD2","KMO"	),group.by = 'sex',disp.min = -1,disp.max = 1)
+#Neuron differentiation-GO
+DoHeatmap(cluster.average_3hPA,features = c("ITM2C", "RAC2", "CLN8", "BCL11A", "LST1", "PHACTR1", "BTG2", "IER2", "S100A9", "SERPINF1", "KLF4", "NR4A2", "SOX4", "ID1", "CXCR4", "RGS2"),group.by = 'sex',disp.min = -1,disp.max = 1)
+```
