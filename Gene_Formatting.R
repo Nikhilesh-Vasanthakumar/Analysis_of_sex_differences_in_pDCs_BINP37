@@ -12,4 +12,9 @@ format_gene_list <- function(input_string) {
   return(gene_list)
 }
 
+# Calculate Z-score for the selected genes
+zscore <- function(x) {
+  (x - mean(x)) / sd(x)
+}
+
 

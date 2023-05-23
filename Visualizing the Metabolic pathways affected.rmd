@@ -1320,3 +1320,573 @@ heatmap_immu__24hCA <- DoHeatmap(cluster.average_24hCA, features = genes, group.
 grid.arrange(heatmap_immu__UT, heatmap_immu__3hCA, heatmap_immu__24hCA, ncol = 3)
 
 ```
+```{r}
+#response to cytokine
+
+genes_UT <- format_gene_list("ISG15/IFIT2/TCL1A/AGPAT2/MX1/CSF2RB/MT2A/TNFRSF4/CCL3/PLSCR1/ADAR/SOCS1/IRF1/SKIL/CD47/EIF5A/IL6ST/UGCG/MIR142/YTHDF2/CREB1/BIRC3/HSPA5/TRIM44/IL10RA/XRCC5/TNFSF13B/GAS6/REL/CDC42/STAT6/ZFAND6/MX2/STAT1/CSF2RA/ACTR3/BIRC2/HCLS1/LILRB4/NFKB1/SMPD3/SP100/IFI16/PTPN2/MBP/HAX1/CYLD/HSP90AB1/NFE2L2/NCL/IL3RA/TPR/SOCS3/RPLP0/SRSF3/KIF5B")
+
+genes_3h <- format_gene_list("CXCL10/CCL3/ISG15/IFIT2/IFIT3/IFIH1/CXCL2/MX1/OAS1/IL1B/SOCS1/RNMT/USP18/TNFSF13B/XAF1/PARP14/ZFP36/IRF1/EIF2AK2/MX2/NMI/LGALS9/XRCC5/XBP1/PNPT1/SP100/B3GNT2/MIR142/IL3RA/TNFRSF4/PTPRC/GCLM/FCER1G/STAT3/BST2/CD38/ENDOG/NDUFA13/TRIM44/IFI16/CCL4/MTF2/LILRA4/MYD88/IRF8/ADAR/APPL1/NUB1/PML/DHX9")
+
+genes_24h <- format_gene_list("BCLAF1/SIRPA/IL10RB/IL10RA/CREB1/PRPF8/TMSB4X/SPI1/LGALS9/NDUFA13/SH2B3/ZFP36/TAF9/KIF5B/TNFRSF18/ENDOG/MBP/CD44/CXCL1/TPR/ETV3/CXCL3/PYCARD/CD40/CD58/UBE2G2/TFRC/PTPN2/BIRC3/PARP9/RAD23B/ACTR3/TRIM44/RNMT/HCLS1/IL13RA1/TP53/CYLD/LAMP3/CCL22/PTPRC/IFI16/TANK/ZFP36L1/CSF2RA/IFNGR1/HCK/IL7R/CDC42/TNFRSF4/NRP2/IFNAR1/SETD2/LAPTM5/HIF1A/EBI3/GSN/CSF2RB/SAMHD1/CD70")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+
+heatmap_cyto__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_cyto__3hCA <- DoHeatmap(cluster.average_3hCA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(fill = FALSE, color = FALSE) + ggtitle("3hCA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_cyto__24hCA <- DoHeatmap(cluster.average_24hCA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(color = FALSE) + ggtitle("24hCA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+grid.arrange(heatmap_cyto__UT, heatmap_cyto__3hCA, heatmap_cyto__24hCA, ncol = 3)
+```
+```{r}
+#Cytokine Mediated Signaling Pathway
+genes_UT <- format_gene_list("ISG15/AGPAT2/MX1/CSF2RB/TNFRSF4/CCL3/ADAR/SOCS1/IRF1/EIF5A/IL6ST/UGCG/YTHDF2/BIRC3/TRIM44/IL10RA/TNFSF13B/GAS6")
+genes_3h <- format_gene_list("CXCL10/CCL3/ISG15/CXCL2/MX1/OAS1/IL1B/SOCS1/USP18/TNFSF13B/PARP14/IRF1/NMI/SP100/IL3RA/TNFRSF4/PTPRC/FCER1G/STAT3/TRIM44/CCL4/LILRA4/MYD88/ADAR/APPL1")
+genes_24h <- format_gene_list("TNFRSF18/CD44/CXCL1/CXCL3/PYCARD/PTPN2/BIRC3/PARP9/TRIM44/IL13RA1/TP53/CYLD/CCL22/PTPRC/TANK/CSF2RA/IFNGR1/HCK/IL7R/TNFRSF4/IFNAR1/LAPTM5/HIF1A/EBI3/CSF2RB/SAMHD1/CD70")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+
+heatmap_sig__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_sig__3hCA <- DoHeatmap(cluster.average_3hCA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(fill = FALSE, color = FALSE) + ggtitle("3hCA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_sig__24hCA <- DoHeatmap(cluster.average_24hCA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(color = FALSE) + ggtitle("24hCA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+grid.arrange(heatmap_sig__UT, heatmap_sig__3hCA, heatmap_sig__24hCA, ncol = 3)
+```
+```{r}
+#cellular response to cytokine stimulus
+genes_UT <-format_gene_list("ISG15/IFIT2/TCL1A/AGPAT2/MX1/CSF2RB/MT2A/TNFRSF4/CCL3/ADAR/SOCS1/IRF1/CD47/EIF5A/IL6ST/UGCG/YTHDF2/CREB1/BIRC3/HSPA5/TRIM44/IL10RA/XRCC5/TNFSF13B/GAS6/CDC42/STAT6/ZFAND6/STAT1/CSF2RA/ACTR3/BIRC2/HCLS1/LILRB4/NFKB1/SMPD3/SP100/IFI16/PTPN2/HAX1/CYLD/HSP90AB1/NFE2L2/NCL/IL3RA/TPR/SOCS3/RPLP0/SRSF3/KIF5B")
+genes_3h <- format_gene_list("CXCL10/CCL3/ISG15/IFIT2/IFIT3/CXCL2/MX1/OAS1/IL1B/SOCS1/RNMT/USP18/TNFSF13B/PARP14/ZFP36/IRF1/NMI/LGALS9/XRCC5/XBP1/PNPT1/SP100/B3GNT2/IL3RA/TNFRSF4/PTPRC/GCLM/FCER1G/STAT3/NDUFA13/TRIM44/IFI16/CCL4/MTF2/LILRA4/MYD88/IRF8/ADAR/APPL1")
+genes_24h <- format_gene_list("BCLAF1/SIRPA/IL10RB/IL10RA/CREB1/PRPF8/TMSB4X/SPI1/LGALS9/NDUFA13/SH2B3/ZFP36/KIF5B/TNFRSF18/CD44/CXCL1/TPR/ETV3/CXCL3/PYCARD/CD40/CD58/UBE2G2/TFRC/PTPN2/BIRC3/PARP9/RAD23B/ACTR3/TRIM44/RNMT/HCLS1/IL13RA1/TP53/CYLD/CCL22/PTPRC/IFI16/TANK/ZFP36L1/CSF2RA/IFNGR1/HCK/IL7R/CDC42/TNFRSF4/NRP2/IFNAR1/LAPTM5/HIF1A/EBI3/GSN/CSF2RB/SAMHD1/CD70")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+
+heatmap_res_cyto__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_res_cyto__3hCA <- DoHeatmap(cluster.average_3hCA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(fill = FALSE, color = FALSE) + ggtitle("3hCA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_res_cyto__24hCA <- DoHeatmap(cluster.average_24hCA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(color = FALSE) + ggtitle("24hCA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+grid.arrange(heatmap_res_cyto__UT, heatmap_res_cyto__3hCA, heatmap_res_cyto__24hCA, ncol = 3)
+```
+```{r}
+#PA
+#Response to Bacterium
+genes_UT <-format_gene_list("TNFAIP3/GPX1/GNLY/NR4A1/TSPO/PYCARD/C15orf48/ST13/CD36/IL1B/CCL5/S100A8/SOD2/FOS/S100A9/PPBP/LYZ")
+
+genes_3h <-format_gene_list("CXCL11/CXCL10/TNF/ISG15/CCL2/CMPK2/S100A9/C15orf48/IRF8/SOD2/TNFRSF1B/RGS1/ARID5A/WDR83/LYN/PLAC8/XBP1/FOS/PTGIR/LY96/HLA-E/RNASE6/SPN/NR4A1/TMF1/GSDMD/USP18/ADH5/LYZ/RNF213/FCER1G/CFD/JAK2/MAP2K7/CEBPB/HNRNPA0/IL6R/CARD16/HLA-B/CHMP5/RAB14/HERC6/HLA-A/CD96/CD274/CASP4/MAPK14/IFNAR1/GCH1/PYCARD/ERAP1/HADHB/PPP1R11")
+
+genes_24h <- format_gene_list("PLAC8/IL1B/S100A8/GNLY/RNF213/CEBPB/S100A9/FCER1G")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+
+heatmap_resp_bac__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_resp_bac__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_resp_bac__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(color = FALSE) + ggtitle("24hPA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+grid.arrange(heatmap_resp_bac__UT, heatmap_resp_bac__3hPA, heatmap_resp_bac__24hPA, ncol = 3)
+
+#Find Signature Scores
+genes_resp_bac <- genes
+
+#Subset the data based on the genes
+resp_bac <- subset(pDC_combined, features = genes_resp_bac)
+average_resp_bac <- AverageExpression(resp_bac,group.by = 'sex.treatment', features = genes_resp_bac,return.seurat = F)
+#Remove the first column
+average_resp_bac <-data.frame(average_resp_bac[1])
+#For UT
+average_resp_bac_female_UT <- (average_resp_bac$RNA.Female_UT)
+average_resp_bac_male_UT <- (average_resp_bac$RNA.Male_UT)
+#For 3h
+average_resp_bac_female_3hPA <- (average_resp_bac$RNA.Female_3hPA)
+average_resp_bac_male_3hPA <- (average_resp_bac$RNA.Male_3hPA)
+#For 24h
+average_resp_bac_female_24hPA <- (average_resp_bac$RNA.Female_24hPA)
+average_resp_bac_male_24hPA <- (average_resp_bac$RNA.Male_24hPA)
+
+# Calculate Z-score for UT
+zscore_female_UT <- zscore(average_resp_bac_female_UT)
+zscore_male_UT <- zscore(average_resp_bac_male_UT)
+
+# Calculate Z-score for 3hPA
+zscore_female_3hPA <- zscore(average_resp_bac_female_3hPA)
+zscore_male_3hPA <- zscore(average_resp_bac_male_3hPA)
+
+# Calculate Z-score for 24hPA
+zscore_female_24hPA <- zscore(average_resp_bac_female_24hPA)
+zscore_male_24hPA <- zscore(average_resp_bac_male_24hPA)
+
+#Boxplot
+Response_Bacteria <- data.frame(
+  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
+  Gender = rep(c("Female", "Male"), times = 3),
+  Value = c(zscore_female_UT, zscore_male_UT,
+             zscore_female_3hPA, zscore_male_3hPA,
+             zscore_female_24hPA, zscore_male_24hPA)
+)
+
+ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+  geom_boxplot() +
+  labs(title = "Z-Score for Selected Genes at Different Time Points",
+       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
+  theme_minimal()
+```
+```{r}
+#inflammatory response
+genes_UT <- format_gene_list("NEAT1/TNFAIP3/GPX1/IFNGR2/CD44/KLF4/PYCARD/TYROBP/LGALS1/TIMP1/CD36/IL1B/CCL5/AIF1/S100A8/FOS/S100A9/PPBP/LYZ")
+
+genes_3h <-format_gene_list("CXCL11/CXCL10/TNF/CTSC/CCL2/S100A9/JUN/TNFRSF1B/AIF1/KLF4/THBS1/SUCNR1/WDR83/PTPRC/P2RX1/DDT/LYN/FOS/IFI35/PTGIR/CD40/PLSCR1/RAC1/PTPN2/LY96/HLA-E/IGFBP4/NKG7/IL10RB/GSDMD/USP18/LILRA5/TRADD/LYZ/MGLL/TOLLIP/ETS1/TLR7/GPSM3/FYN/ANXA1/PSMA6/SCYL1/IFI16/CD47/JAK2/CEBPB/CXCR3/HNRNPA0/IL6R/LIPA/CXCR4/CD96/IL17RA/APOL2/CASP4/MAPK14")
+
+genes_24h <- format_gene_list("CCL4/IL1B/S100A8/IL2RA/CXCR4/CCL5/CEBPB/TNFRSF1B/S100A9/CXCL2/MIF/NEAT1/CST7/TNFRSF4/PTPN2/RB1/CD44/TNFAIP3/PTPRC/NFKBIZ/CXCL1/RAC1/CCL2/FURIN/HLA-E/IL10RB/CTSC/MAPKAPK2/REL/NDUFC2/NINJ1")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+
+heatmap_infla__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_infla__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+heatmap_infla__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+  guides(color = FALSE) + ggtitle("24hPA") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+grid.arrange(heatmap_infla__UT, heatmap_infla__3hPA, heatmap_infla__24hPA, ncol = 3)
+
+#Find Signature Scores
+genes_infla <- genes
+
+#Subset the data based on the genes
+inflama <- subset(pDC_combined, features = genes_infla)
+average_infla <- AverageExpression(inflama,group.by = 'sex.treatment', features = genes_infla,return.seurat = F)
+#Remove the first column
+average_infla <-data.frame(average_infla[1])
+#For UT
+average_infla_female_UT <- (average_infla$RNA.Female_UT)
+average_infla_male_UT <- (average_infla$RNA.Male_UT)
+#For 3h
+average_infla_female_3hPA <- (average_infla$RNA.Female_3hPA)
+average_infla_male_3hPA <- (average_infla$RNA.Male_3hPA)
+#For 24h
+average_infla_female_24hPA <- (average_infla$RNA.Female_24hPA)
+average_infla_male_24hPA <- (average_infla$RNA.Male_24hPA)
+
+# Calculate Z-score for UT
+zscore_female_UT <- zscore(average_infla_female_UT)
+zscore_male_UT <- zscore(average_infla_male_UT)
+
+# Calculate Z-score for 3hPA
+zscore_female_3hPA <- zscore(average_infla_female_3hPA)
+zscore_male_3hPA <- zscore(average_infla_male_3hPA)
+
+# Calculate Z-score for 24hPA
+zscore_female_24hPA <- zscore(average_infla_female_24hPA)
+zscore_male_24hPA <- zscore(average_infla_male_24hPA)
+
+#Boxplot
+Response_Bacteria <- data.frame(
+  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
+  Gender = rep(c("Female", "Male"), times = 3),
+  Value = c(zscore_female_UT, zscore_male_UT,
+             zscore_female_3hPA, zscore_male_3hPA,
+             zscore_female_24hPA, zscore_male_24hPA)
+)
+
+ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+  geom_boxplot() +
+  labs(title = "Z-Score for Selected Genes at Different Time Points",
+       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
+  theme_minimal()
+```
+```{r}
+#blood vessel morphogenesis
+genes_UT<- format_gene_list("ID1/CYBB/MTDH/PRKCB/MYH9/CXCR4/GTF2I/B4GALT1/SPI1/ACTG1/TNFAIP3/GPX1/ANXA2/PTEN/SOX4/NR4A1/KLF4/BAX/ZFP36L1/RGCC/FLNA/PKM/IL1B")
+
+genes_3h <- format_gene_list("CXCL10/TNF/CCL2/EREG/RGCC/JUN/KLF4/THBS1/CITED2/GADD45A/XBP1/CD40/JUNB/NR4A1/PRKCB/PANK2/STAT1/STK4/MECP2/RIN2/WASF2/MMP19/RNF213/GNA13/NAA15/AAMP/ETS1/ANXA1/FMNL3/HIF1AN/TGFBR1/CXCR3/CXCR4/ITGA5/UBP1/MAPK14/ADIPOR2/SEMA4A/HIF1A/ERAP1/PDCL3/KLF2/FOXJ2/CYP1B1/ADAM8/SYK/SRF/PGK1/PRDM1/ACTG1/EGLN1/RAP1A/JAK1/HMOX1/SEC24B/SIRT1/NOTCH1/BTG1/PIK3C2A/WARS2")
+
+genes_24h <- format_gene_list("IL1B/RNF213/CXCR4/SAT1/TGFBR2/CCM2/SOX4/GNA13/JAK1/TNFAIP3/CCL2/ANXA2/BTG1/TNFAIP2/NRP2/PGK1/RAP1A/NINJ1/STK4/ADIPOR2/RBPJ/PPP1R16B/SP100/ITGB1/NFE2L2/HIF1A/SPHK1/SEMA4A/HTATIP2/AIMP1/EMC10/NOTCH2/GTF2I/CD40/ZMIZ1/ZFP36L1")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+    heatmap_blood_morph__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+     scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_blood_morph__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_blood_morph__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(color = FALSE) + ggtitle("24hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    grid.arrange(heatmap_blood_morph__UT, heatmap_blood_morph__3hPA, heatmap_blood_morph__24hPA, ncol = 3)
+#Subset the data based on the genes
+
+genes_blood_morph <- genes
+
+#Subset the data based on the genes
+blood_morphma <- subset(pDC_combined, features = genes_blood_morph)
+average_blood_morph <- AverageExpression(blood_morphma,group.by = 'sex.treatment', features = genes_blood_morph,return.seurat = F)
+#Remove the first column
+average_blood_morph <-data.frame(average_blood_morph[1])
+#For UT
+average_blood_morph_female_UT <- (average_blood_morph$RNA.Female_UT)
+average_blood_morph_male_UT <- (average_blood_morph$RNA.Male_UT)
+#For 3h
+average_blood_morph_female_3hPA <- (average_blood_morph$RNA.Female_3hPA)
+average_blood_morph_male_3hPA <- (average_blood_morph$RNA.Male_3hPA)
+#For 24h
+average_blood_morph_female_24hPA <- (average_blood_morph$RNA.Female_24hPA)
+average_blood_morph_male_24hPA <- (average_blood_morph$RNA.Male_24hPA)
+
+# Calculate Z-score for UT
+zscore_female_UT <- zscore(average_blood_morph_female_UT)
+zscore_male_UT <- zscore(average_blood_morph_male_UT)
+
+# Calculate Z-score for 3hPA
+zscore_female_3hPA <- zscore(average_blood_morph_female_3hPA)
+zscore_male_3hPA <- zscore(average_blood_morph_male_3hPA)
+
+# Calculate Z-score for 24hPA
+zscore_female_24hPA <- zscore(average_blood_morph_female_24hPA)
+zscore_male_24hPA <- zscore(average_blood_morph_male_24hPA)
+
+#Boxplot
+Response_Bacteria <- data.frame(
+  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
+  Gender = rep(c("Female", "Male"), times = 3),
+  Value = c(zscore_female_UT, zscore_male_UT,
+             zscore_female_3hPA, zscore_male_3hPA,
+             zscore_female_24hPA, zscore_male_24hPA)
+)
+
+ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+  geom_boxplot() +
+  labs(title = "Z-Score for Selected Genes at Different Time Points",
+       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
+  theme_minimal()
+```
+```{r}
+#immune response
+genes_UT <- format_gene_list("ISG15/PTGDS/IFIT2/IFI44L/MX1/CTSC/SEMA7A/CSF2RB/NFKBID/ISG20/GZMB/NINJ1/TNFRSF4/CCL3/HLA-DQA1/PLSCR1/ADAR/TAP1/SOCS1/IRF1/CD47/HLA-F/IL6ST/LTB/RBCK1/YTHDF2/GPR183/HLA-A/HLA-DQB1/RFTN1/LPXN/BIRC3/ICOSLG/XRCC5/TNFSF13B/REL/SLAMF7/PSMA1/CDC42/HLA-B/STAT6/PPP1R14B/TRIM22/MAD2L2/NFKBIZ/CLEC4C/DGKZ/MX2/STAT1/NR4A3/ERCC1/MPEG1/ACTR3/BIRC2/PSMB10/LITAF/TNIP1/LILRB4/SLC7A5/TRAF4/SP100/TAPBP/NFKB2/IFI16/PTPN2")
+
+genes_3h <- format_gene_list("CXCL11/CXCL10/IFIT2/TNF/CTSC/TNFSF10/NMB/RSAD2/ISG15/IRF1/LST1/MX1/EXOSC9/PARP14/CCL2/IFI6/IFIH1/IFIT3/S100A9/IRF8/EREG/IFI44L/GZMB/HLA-DQA2/PHF14/GBP1/IRF7/ISG20/KDM5D/RGCC/TNFRSF1B/AIF1/OASL/USP15/RGS1/STX7/LTB/THBS1/ARID5A/HSPA1B/CTSL/STOML2/GAPT/SUCNR1/IFITM3/STAT2/PTPRC/PARP9/LYN/FKBP1A/XBP1/LSM14A/IFI35/CD40/EIF2AK2/ST3GAL1/PLSCR1/PTPN2/KLRB1/TAP1/PARP1/LY96/AZI2/CD164/HLA-E/RNASE6/APBB1IP/LCP2/JUNB/DENND1B/ZBTB1/SPN/PHPT1/NKG7/IL10RB/PRKCB/TNFRSF21/GSDMD/USP18/STAT1/SOCS1/LILRA5/LYZ/HLA-C/DOCK10/TOLLIP/PTPN1/FCER1G/ETS1/TLR7/METTL3/FYN/ANXA1/PTPN11/KAT5/CFD/IFI16/CD47/JAK2/MAP2K7/BANF1/CEBPB/TRIM25/SAMSN1/CXCR3/IL6R/DAPK1/CD3D/HLA-B/EXOSC6/UBQLN1/CXCR4/PAK1/MORC3/SMPD1/HLA-A/STX8/SAMHD1/CD96/IL17RA/DDX1/IFIT1/CD274/TRAF2/YTHDF2/CASP4/SLAMF7/MAPK14/POLR3D/CMTM3/ADAR/IFNAR1/MYO1G/ATP7A/XRCC5/SEMA4A/GCH1/CREBBP/CDC37/CD48/ZC3HAV1/PYCARD/ERAP1/RHBDF2/ATG5/ITGAL")
+
+genes_24h <- format_gene_list("HLA-DRB5/CCL4/IL1B/S100A8/GNLY/IL2RA/CXCR4/CCL5/CEBPB/TNFRSF1B/S100A9/LST1/TNFSF10/IFITM2/EIF2AK4/CXCL2/GZMB/HLA-DOA/MIF/CORO1A/IRF4/CD58/ISG20/IL32/CD59/RIF1/JAK1/FCER1G/CST7/TNFRSF4/UBE2J1/KYNU/PTPN2/TRIM38/LGALS3/TNFAIP3/PTPRC/NFKBIZ/WAS/TRAF4/CXCL1/HLA-B/MEF2C/CCL2/ACTR2/UBE2N/NR1H2/PQBP1/DHX36/FES/OPTN/FURIN/PHPT1/FTH1/PKN1/HLA-E/IL4I1/IL10RB/RNF19B/CTSC/XRCC5/HSPD1/MAPKAPK2/REL/NINJ1/GAPDH/IL2RG/TYK2/ICAM1/RFTN1/NKG7/LITAF/UBQLN1/RBPJ/CYLD/HLA-DQA2/IRF1/PRDX1/NFKB2/FCGRT/WNK1/NPLOC4/SP100")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+ heatmap_immune_res__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+     scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_immune_res__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_immune_res__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(color = FALSE) + ggtitle("24hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    grid.arrange(heatmap_immune_res__UT, heatmap_immune_res__3hPA, heatmap_immune_res__24hPA, ncol = 3)
+#Subset the data based on the genes
+
+genes_immune_res <- genes
+
+#Subset the data based on the genes
+immune_resma <- subset(pDC_combined, features = genes_immune_res)
+average_immune_res <- AverageExpression(immune_resma,group.by = 'sex.treatment', features = genes_immune_res,return.seurat = F)
+#Remove the first column
+average_immune_res <-data.frame(average_immune_res[1])
+#For UT
+average_immune_res_female_UT <- (average_immune_res$RNA.Female_UT)
+average_immune_res_male_UT <- (average_immune_res$RNA.Male_UT)
+#For 3h
+average_immune_res_female_3hPA <- (average_immune_res$RNA.Female_3hPA)
+average_immune_res_male_3hPA <- (average_immune_res$RNA.Male_3hPA)
+#For 24h
+average_immune_res_female_24hPA <- (average_immune_res$RNA.Female_24hPA)
+average_immune_res_male_24hPA <- (average_immune_res$RNA.Male_24hPA)
+
+# Calculate Z-score for UT
+zscore_female_UT <- zscore(average_immune_res_female_UT)
+zscore_male_UT <- zscore(average_immune_res_male_UT)
+
+# Calculate Z-score for 3hPA
+zscore_female_3hPA <- zscore(average_immune_res_female_3hPA)
+zscore_male_3hPA <- zscore(average_immune_res_male_3hPA)
+
+# Calculate Z-score for 24hPA
+zscore_female_24hPA <- zscore(average_immune_res_female_24hPA)
+zscore_male_24hPA <- zscore(average_immune_res_male_24hPA)
+
+#Boxplot
+Response_Bacteria <- data.frame(
+  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
+  Gender = rep(c("Female", "Male"), times = 3),
+  Value = c(zscore_female_UT, zscore_male_UT,
+             zscore_female_3hPA, zscore_male_3hPA,
+             zscore_female_24hPA, zscore_male_24hPA)
+)
+
+ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+  geom_boxplot() +
+  labs(title = "Z-Score for Selected Genes at Different Time Points",
+       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
+  theme_minimal()
+```
+```{r}
+#response to cytokine
+genes_UT <- format_gene_list("ISG15/IFIT2/TCL1A/AGPAT2/MX1/CSF2RB/MT2A/TNFRSF4/CCL3/PLSCR1/ADAR/SOCS1/IRF1/SKIL/CD47/EIF5A/IL6ST/UGCG/MIR142/YTHDF2/CREB1/BIRC3/HSPA5/TRIM44/IL10RA/XRCC5/TNFSF13B/GAS6/REL/CDC42/STAT6/ZFAND6/MX2/STAT1/CSF2RA/ACTR3/BIRC2/HCLS1/LILRB4/NFKB1/SMPD3/SP100/IFI16/PTPN2/MBP/HAX1/CYLD/HSP90AB1/NFE2L2/NCL/IL3RA/TPR/SOCS3/RPLP0/SRSF3/KIF5B")
+
+genes_3h <- format_gene_list("CXCL11/CXCL10/IFIT2/TNF/ISG15/IRF1/MX1/PARP14/CCL2/IFIH1/IFIT3/IRF8/EREG/GBP1/IRF7/TNFRSF1B/AIF1/OASL/TNFRSF18/KLF4/THBS1/HSPA1B/IFITM3/STAT2/CTBP2/PTPRC/PARP9/LYN/XBP1/FOS/LSM14A/TCL1A/CD40/EIF2AK2/SRM/STAT4/UGCG/PLSCR1/PTPN2/PDGFB/YY1/AZI2/DDOST/IL10RB/TNFRSF21/USP18/STAT1/TXNDC17/SOCS1/LILRA5/TRADD/TPR/COMMD7/ADAM10/TOLLIP/AGPAT2/PTPN1/FCER1G/METTL3/ANXA1/PTPN11/IFI16/CD47/JAK2/MAP2K7/CEBPB/TRIM25/CXCR3/IL6R/DAPK1/CARD16/CXCR4/SH2B3/SMPD1/STX8/SAMHD1/IL17RA/IFIT1/PDIA3/CD274/TRAF2/YTHDF2/CASP4/MAPK14/ADAR/IFNAR1/XRCC5/ADIPOR2/GCH1/ZFP36L2/CDC37/HIF1A/PYCARD")
+
+genes_24h <- format_gene_list("CCL4/IL1B/MT2A/IL2RA/CXCR4/CCL5/CEBPB/TNFRSF1B/IFITM2/TNFRSF18/CXCL2/CORO1A/PLP2/CD58/RIF1/JAK1/FCER1G/TNFRSF4/KYNU/PTPN2/BAD/LIMS1/CD44/TNFAIP3/PTPRC/WAS/PPP2CB/CXCL1/RAD23B/CCL2/ACTR2/NR1H2/CREB1/NRP2/HAX1/HSPA5/IL10RB/XRCC5/P4HB/MAPKAPK2/REL/GAPDH/ADIPOR2/EEF1E1/IL2RG/TYK2/ICAM1/PDIA3")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+ heatmap_res_cyto__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+     scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_res_cyto__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_res_cyto__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(color = FALSE) + ggtitle("24hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    grid.arrange(heatmap_res_cyto__UT, heatmap_res_cyto__3hPA, heatmap_res_cyto__24hPA, ncol = 3)
+#Subset the data based on the genes
+
+genes_res_cyto <- genes
+
+#Subset the data based on the genes
+res_cytoma <- subset(pDC_combined, features = genes_res_cyto)
+average_res_cyto <- AverageExpression(res_cytoma,group.by = 'sex.treatment', features = genes_res_cyto,return.seurat = F)
+#Remove the first column
+average_res_cyto <-data.frame(average_res_cyto[1])
+#For UT
+average_res_cyto_female_UT <- (average_res_cyto$RNA.Female_UT)
+average_res_cyto_male_UT <- (average_res_cyto$RNA.Male_UT)
+#For 3h
+average_res_cyto_female_3hPA <- (average_res_cyto$RNA.Female_3hPA)
+average_res_cyto_male_3hPA <- (average_res_cyto$RNA.Male_3hPA)
+#For 24h
+average_res_cyto_female_24hPA <- (average_res_cyto$RNA.Female_24hPA)
+average_res_cyto_male_24hPA <- (average_res_cyto$RNA.Male_24hPA)
+
+# Calculate Z-score for UT
+zscore_female_UT <- zscore(average_res_cyto_female_UT)
+zscore_male_UT <- zscore(average_res_cyto_male_UT)
+
+# Calculate Z-score for 3hPA
+zscore_female_3hPA <- zscore(average_res_cyto_female_3hPA)
+zscore_male_3hPA <- zscore(average_res_cyto_male_3hPA)
+
+# Calculate Z-score for 24hPA
+zscore_female_24hPA <- zscore(average_res_cyto_female_24hPA)
+zscore_male_24hPA <- zscore(average_res_cyto_male_24hPA)
+
+#Boxplot
+Response_Bacteria <- data.frame(
+  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
+  Gender = rep(c("Female", "Male"), times = 3),
+  Value = c(zscore_female_UT, zscore_male_UT,
+             zscore_female_3hPA, zscore_male_3hPA,
+             zscore_female_24hPA, zscore_male_24hPA)
+)
+
+ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+  geom_boxplot() +
+  labs(title = "Z-Score for Selected Genes at Different Time Points",
+       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
+  theme_minimal()
+```
+```{r}
+#cytokine-mediated signaling pathway
+genes_UT <- format_gene_list("ISG15/AGPAT2/MX1/CSF2RB/TNFRSF4/CCL3/ADAR/SOCS1/IRF1/EIF5A/IL6ST/UGCG/YTHDF2/BIRC3/TRIM44/IL10RA/TNFSF13B/GAS6")
+
+genes_3h <- format_gene_list("CXCL11/CXCL10/TNF/ISG15/IRF1/MX1/PARP14/CCL2/EREG/IRF7/TNFRSF1B/OASL/TNFRSF18/HSPA1B/IFITM3/STAT2/PTPRC/PARP9/LYN/LSM14A/STAT4/UGCG/PTPN2/PDGFB/AZI2/IL10RB/USP18/STAT1/TXNDC17/SOCS1/LILRA5/TRADD/COMMD7/TOLLIP/AGPAT2/PTPN1/FCER1G/METTL3/PTPN11/JAK2/CXCR3/IL6R/CARD16/CXCR4/SH2B3/SAMHD1/IL17RA/TRAF2/YTHDF2/CASP4/ADAR/IFNAR1/ADIPOR2/CDC37/HIF1A/PYCARD")
+
+genes_24h <- format_gene_list("CCL4/IL1B/IL2RA/CXCR4/CCL5/TNFRSF1B/IFITM2/TNFRSF18/CXCL2/PLP2/JAK1/FCER1G/TNFRSF4/PTPN2/BAD/LIMS1/CD44/TNFAIP3/PTPRC/PPP2CB/CXCL1/CCL2/NR1H2/IL10RB/P4HB/ADIPOR2/IL2RG/TYK2/PADI2/CYLD/TRAF1/IRF1/WNK1/TRADD/SP100")
+
+genes <- unique(c(genes_24h, genes_3h, genes_UT))
+ heatmap_cyto_sig__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+     scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_cyto_sig__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_cyto_sig__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(color = FALSE) + ggtitle("24hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    grid.arrange(heatmap_cyto_sig__UT, heatmap_cyto_sig__3hPA, heatmap_cyto_sig__24hPA, ncol = 3)
+#Subset the data based on the genes
+
+genes_cyto_sig <- genes
+
+#Subset the data based on the genes
+cyto_sigma <- subset(pDC_combined, features = genes_cyto_sig)
+average_cyto_sig <- AverageExpression(cyto_sigma,group.by = 'sex.treatment', features = genes_cyto_sig,return.seurat = F)
+#Remove the first column
+average_cyto_sig <-data.frame(average_cyto_sig[1])
+#For UT
+average_cyto_sig_female_UT <- (average_cyto_sig$RNA.Female_UT)
+average_cyto_sig_male_UT <- (average_cyto_sig$RNA.Male_UT)
+#For 3h
+average_cyto_sig_female_3hPA <- (average_cyto_sig$RNA.Female_3hPA)
+average_cyto_sig_male_3hPA <- (average_cyto_sig$RNA.Male_3hPA)
+#For 24h
+average_cyto_sig_female_24hPA <- (average_cyto_sig$RNA.Female_24hPA)
+average_cyto_sig_male_24hPA <- (average_cyto_sig$RNA.Male_24hPA)
+
+# Calculate Z-score for UT
+zscore_female_UT <- zscore(average_cyto_sig_female_UT)
+zscore_male_UT <- zscore(average_cyto_sig_male_UT)
+
+# Calculate Z-score for 3hPA
+zscore_female_3hPA <- zscore(average_cyto_sig_female_3hPA)
+zscore_male_3hPA <- zscore(average_cyto_sig_male_3hPA)
+
+# Calculate Z-score for 24hPA
+zscore_female_24hPA <- zscore(average_cyto_sig_female_24hPA)
+zscore_male_24hPA <- zscore(average_cyto_sig_male_24hPA)
+
+#Boxplot
+Response_Bacteria <- data.frame(
+  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
+  Gender = rep(c("Female", "Male"), times = 3),
+  Value = c(zscore_female_UT, zscore_male_UT,
+             zscore_female_3hPA, zscore_male_3hPA,
+             zscore_female_24hPA, zscore_male_24hPA)
+)
+
+ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+  geom_boxplot() +
+  labs(title = "Z-Score for Selected Genes at Different Time Points",
+       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
+  theme_minimal()
+```
+```{r}
+#response to biotic stimulus
+genes_UT <-format_gene_list("NR1H2/TUBB/TNFAIP3/IFITM2/GPX1/GNLY/IFNAR2/IFNGR2/NR4A1/TSPO/COTL1/KLF4/BAX/PYCARD/C15orf48/TYROBP/TRIM38/ST13/GAPDH/HSP90AA1/CD36/IL1B/CCL5/DDX3X/AIF1/S100A8/SOD2/FOS/S100A9/PPBP/LYZ")
+
+genes_3h <- format_gene_list("CXCL11/CXCL10/IFIT2/TNF/NMB/RSAD2/ISG15/IRF1/MX1/PARP14/CCL2/IFI6/IFIH1/IFIT3/CMPK2/S100A9/C15orf48/IRF8/EREG/IFI44L/GZMB/SOD2/GBP1/IRF7/ISG20/TNFRSF1B/AIF1/OASL/USP15/RGS1/KLF4/ARID5A/IRF9/ZMPSTE24/NT5C3A/IFITM3/GTF2F1/WDR83/STAT2/PTPRC/PARP9/LYN/PLAC8/XBP1/FOS/LSM14A/IFI35/PTGIR/CD40/EIF2AK2/PLSCR1/PTPN2/SLFN11/KLRB1/PARP1/LY96/AZI2/HLA-E/RNASE6/ZBTB1/SPN/NR4A1/TMF1/NKG7/IL10RB/GSDMD/USP18/STAT1/MECP2/COTL1/SOCS1/LILRA5/ADH5/LYZ/HLA-C/RNF213/EXOC1/TOLLIP/PTPN1/FCER1G/TLR7/METTL3/FYN/ANXA1/PTPN11/KAT5/CFD/IFI16/CD47/JAK2/MAP2K7/BANF1/CEBPB/TRIM25/HNRNPA0/IL6R/DAPK1/CARD16/HLA-B/CHMP5/RAB14/HERC6/CXCR4/PAK1/MORC3/SMPD1/HLA-A/STX8/SAMHD1/CD96/IL17RA/DDX1/IFIT1/CD274/YTHDF2/CASP4/SLAMF7/MAPK14/STMN1/POLR3D/ARMC5/ADAR/IFNAR1/XRCC5/GCH1/CREBBP/CDC37/HIF1A/ZC3HAV1/PYCARD/ERAP1/ATG5/HADHB/PPP1R11/ILF3/ZYX")
+
+genes_24h <- format_gene_list("C15orf48/SOD2/PLAC8/CCL4/IL1B/S100A8/GNLY/RNF213/CXCR4/CCL5/CEBPB/TNFRSF1B/S100A9/IFITM2/EIF2AK4/PMAIP1/CXCL2/GZMB/MIF/CORO1A/GTF2F1/IRF4/CD58/OTUD5/ISG20/JAK1/FCER1G/DDX17/KYNU/PTPN2/TRIM38/LGALS3/TNFAIP3/PTPRC/WAS/TRAF4/CXCL1/HLA-B/MEF2C/CCL2/ACTR2/NR1H2/PQBP1/DHX36/AUP1/FES/OPTN/ODC1/TSPO/HSPA5/HLA-E/IL4I1/CCT5/IL10RB/RNF19B/BNIP3L/FKBP5/XRCC5/HSPD1/MAPKAPK2/REL/PPM1B/GAPDH/JUND")
+
+genes <- unique(c(genes_UT, genes_3h, genes_24h))
+
+heatmap_cyto_sig__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+     scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_cyto_sig__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_cyto_sig__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(color = FALSE) + ggtitle("24hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    grid.arrange(heatmap_cyto_sig__UT, heatmap_cyto_sig__3hPA, heatmap_cyto_sig__24hPA, ncol = 3)
+#Subset the data based on the genes
+
+genes_cyto_sig <- genes
+
+#Subset the data based on the genes
+cyto_sigma <- subset(pDC_combined, features = genes_cyto_sig)
+average_cyto_sig <- AverageExpression(cyto_sigma,group.by = 'sex.treatment', features = genes_cyto_sig,return.seurat = F)
+#Remove the first column
+average_cyto_sig <-data.frame(average_cyto_sig[1])
+#For UT
+average_cyto_sig_female_UT <- (average_cyto_sig$RNA.Female_UT)
+average_cyto_sig_male_UT <- (average_cyto_sig$RNA.Male_UT)
+#For 3h
+average_cyto_sig_female_3hPA <- (average_cyto_sig$RNA.Female_3hPA)
+average_cyto_sig_male_3hPA <- (average_cyto_sig$RNA.Male_3hPA)
+#For 24h
+average_cyto_sig_female_24hPA <- (average_cyto_sig$RNA.Female_24hPA)
+average_cyto_sig_male_24hPA <- (average_cyto_sig$RNA.Male_24hPA)
+
+# Calculate Z-score for UT
+zscore_female_UT <- zscore(average_cyto_sig_female_UT)
+zscore_male_UT <- zscore(average_cyto_sig_male_UT)
+
+# Calculate Z-score for 3hPA
+zscore_female_3hPA <- zscore(average_cyto_sig_female_3hPA)
+zscore_male_3hPA <- zscore(average_cyto_sig_male_3hPA)
+
+# Calculate Z-score for 24hPA
+zscore_female_24hPA <- zscore(average_cyto_sig_female_24hPA)
+zscore_male_24hPA <- zscore(average_cyto_sig_male_24hPA)
+
+#Boxplot
+Response_Bacteria <- data.frame(
+  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
+  Gender = rep(c("Female", "Male"), times = 3),
+  Value = c(zscore_female_UT, zscore_male_UT,
+             zscore_female_3hPA, zscore_male_3hPA,
+             zscore_female_24hPA, zscore_male_24hPA)
+)
+
+ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+  geom_boxplot() +
+  labs(title = "Z-Score for Selected Genes at Different Time Points",
+       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
+  theme_minimal()
+
+```
