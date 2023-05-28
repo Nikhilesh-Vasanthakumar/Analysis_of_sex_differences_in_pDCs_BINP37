@@ -89,7 +89,8 @@ cluster.average <- FindClusters(cluster.average, resolution = 0.5)
 #Perform UMAP
 cluster.average <- RunUMAP(cluster.average, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
 #Plot the Heatmap
-DoHeatmap(cluster.average,features= c("EIF1AY","RPS4Y1",'XIST'),group.by = c('sex'),size = 2,draw.lines =FALSE)
+a<- DoHeatmap(cluster.average,features= c("EIF1AY","RPS4Y1",'XIST'),group.by = c('sex'),size = 5,draw.lines =FALSE)
+saveRDS(a, file = "Sex_Heatmap.rds")
 ggsave("Classify_Heatmap.png",width = 10,height = 10)
 
 #Add the cluster average sex information to the pDC object
@@ -107,6 +108,3 @@ saveRDS(pDC, file = "pDC_final_sex.rds")
 ```{r}
 
 ```
-
-Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
-Click the **Knit and Open Document** to build and preview an output.

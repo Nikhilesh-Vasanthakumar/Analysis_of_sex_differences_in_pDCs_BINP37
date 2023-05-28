@@ -56,31 +56,22 @@ DoHeatmap(cluster.average_UT,features=c("TSPO","KLF4","HSP90AA1","CD36","IL1B","
                        limits = c(-2, 2))
 
 
-DoHeatmap(pDC_combined,features = c("TSPO","KLF4","HSP90AA1","CD36","IL1B","AIF1","SOD2"),group.by = 'sex.treatment',disp.min = -1, disp.max = 1)+ scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
-                       oob = scales::oob_squish_any,
-                       limits = c(-2, 2))
 #Using all the genes from the pathway
 DoHeatmap(cluster.average_UT,features = c("TLR2", "NOS1", "CYP1B1", "CYB5R3", "DDAH2", "NQO1", "GCH1", "CYB5B", "NOS3", "ARG2", "MTARC1", "TLR4", "TICAM1", "SLC7A6", "KLRK1", "AKT1", "POR", "CPS1", "MTARC2", "RORA", "GCHFR", "ACP5", "SPR", "NOS2", "CAV1"),group.by = 'sex',disp.min = -1,disp.max = 1)
 
 #KEGG Carbon metabolism
-DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1"),group.by = 'sex')+scale_fill_gradientn(colors = paletteer::paletteer_c("grDevices::Blue-Red", n=20, direction = -1), oob=scales::oob_squish_any, limits=c(-2,2))
+DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1"),group.by = 'sex')+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2))
 
-
-DoHeatmap(pDC_combined,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1"),group.by = 'sex')
 #Glycolysis
-DoHeatmap(cluster.average_UT,features = c("GAPDH","ADH5","ADPGK","PGK1","LDHA","ALDH3B1","MINPP1","PGAM1","PFKM","PFKL","ALDH9A1","ALDH2","PKM","GPI","ALDH7A1","PGAM4","FBP1","ALDOA","ENO2","LDHB","ALDH1B1","HK3"),group.by = 'sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
-                       oob = scales::oob_squish_any,
-                       limits = c(-2, 2))
+DoHeatmap(cluster.average_UT,features = c("GAPDH","ADH5","ADPGK","PGK1","LDHA","ALDH3B1","MINPP1","PGAM1","PFKM","PFKL","ALDH9A1","ALDH2","PKM","GPI","ALDH7A1","PGAM4","FBP1","ALDOA","ENO2","LDHB","ALDH1B1","HK3"),group.by = 'sex',disp.min = -1,disp.max = 1)+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2))
 
 #TCA cycle
-DoHeatmap(cluster.average_UT,features = c("PDHB","MDH2","OGDH","SDHC","FH","DLAT","ACO2","SDHA","IDH3G","ACLY","CS","SUCLG1","DLD","SDHD","IDH3A"),group.by = 'sex',disp.min = -2,disp.max = 2)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
-                       oob = scales::oob_squish_any,
+DoHeatmap(cluster.average_UT,features = c("PDHB","MDH2","OGDH","SDHC","FH","DLAT","ACO2","SDHA","IDH3G","ACLY","CS","SUCLG1","DLD","SDHD","IDH3A"),group.by = 'sex',disp.min = -2,disp.max = 2)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"), oob = scales::oob_squish_any,
                        limits = c(-2, 2))
 
 # Oxidative phosphorylation
-DoHeatmap(cluster.average_UT,features = c("NDUFA11","COX5B","ATP5ME","COX8A","UQCRQ","NDUFB1","NDUFA1","ATP5MC2","NDUFS6","COX7C","UQCR11","COX6B1","NDUFB3","ATP5MG","UQCRH","COX7B2"),group.by = 'sex')+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
-                       oob = scales::oob_squish_any,
-                       limits = c(-3, 3))
+DoHeatmap(cluster.average_UT,features = c("NDUFA11","COX5B","ATP5ME","COX8A","UQCRQ","NDUFB1","NDUFA1","ATP5MC2","NDUFS6","COX7C","UQCR11","COX6B1","NDUFB3","ATP5MG","UQCRH","COX7B2"),group.by = 'sex')+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"), oob = scales::oob_squish_any,
+                       limits = c(-2, 2))
 
 #Upregulation of Microphilial/Macrophage activation_GO
 DoHeatmap(cluster.average_UT,features = c("CCL3", "STAP1","CTSC","CCL3","MIR142"),group.by = 'sex') + scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
@@ -88,35 +79,34 @@ DoHeatmap(cluster.average_UT,features = c("CCL3", "STAP1","CTSC","CCL3","MIR142"
                        limits = c(-2, 2))
 
 #IL-6 Production
-DoHeatmap(cluster.average_UT,features =c("ARRB2","TNFAIP3","PYCARD","TYROBP","CD36","IL1B","AIF1"),group.by = 'sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
+a<-DoHeatmap(cluster.average_UT,features =c("ARRB2","TNFAIP3","PYCARD","TYROBP","CD36","IL1B","AIF1"),group.by = 'sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
                        oob = scales::oob_squish_any,
                        limits = c(-2, 2))
+saveRDS(a, file = "IL6.rds")
 #IL-17 Production
-DoHeatmap(cluster.average_UT,features=c("RFTN1","SLC7A5","IFNG" ,"LILRB2", "AIF1",  "AKIRIN2" ,"CD36", "EREG", "ZBTB20", "HYAL2" ,"APP" ,"TSLP" ,"F2R","PTAFR","SETD4","NOS2","TLR3","HMGB1"),group.by='sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
+DoHeatmap(cluster.average_UT,features=c("RFTN1","SLC7A5","IFNG" ,"LILRB2", "AIF1",  "AKIRIN2" ,"CD36", "EREG", "ZBTB20", "HYAL2" ,"APP" ,"TSLP" ,"F2R","PTAFR","SETD4","NOS2","TLR3","HMGB1"),group.by='sex')+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
                        oob = scales::oob_squish_any,
                        limits = c(-2, 2))
-
+#Positive regulation of monocyte chemotaxis_GO
+DoHeatmap(cluster.average_UT,features =c("LGMN","CCL5","AIF1"),group.by = 'sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
+                       oob = scales::oob_squish_any,
+                       limits = c(-2, 2))
 #Carbon Metabolism-KEGG
 DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1" ),group.by = 'sex',disp.min = -2,disp.max = 2)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
                        oob = scales::oob_squish_any,
                        limits = c(-2, 2))
 #Biosynthesis of amino acids-KEGG
-DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","CSF2RB","MARCH1"),group.by = 'sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
-                       oob = scales::oob_squish_any,
-                       limits = c(-2, 2))
+DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","CSF2RB","MARCH1"),group.by = 'sex',disp.min = -1,disp.max = 1)+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2))
+
 
 #Cholesterol Metabolism-KEGG
-DoHeatmap(cluster.average_UT,features = c("CCT3","HNRNPA2B1","LIMD2","RPL28"),group.by = 'sex',disp.min = -1.5,disp.max = 1.5)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
-                       oob = scales::oob_squish_any,
-                       limits = c(-2, 2))
+DoHeatmap(cluster.average_UT,features = c("CCT3","HNRNPA2B1","LIMD2","RPL28"),group.by = 'sex',disp.min = -1.5,disp.max = 1.5)+  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2))
 
 #Pentose Phosphate Pathway-KEGG
 
 DoHeatmap(cluster.average_UT, features = c("OCIAD1", "RAB21", "PTGDS"),
           group.by = 'sex', disp.min = -1, disp.max = 1) +
-  scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
-                       oob = scales::oob_squish_any,
-                       limits = c(-2, 2))
+   scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2))
 ```
 
 position the caret at any line or the code chunk, then click "+".
@@ -502,6 +492,9 @@ cluster.average_24hMTB@meta.data$sex <- rep(NA, nrow(cluster.average_24hMTB@meta
 cluster.average_24hMTB@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
 ```
 ```{r}
+library(gridExtra)
+#Import Functions file
+source("C:/Users/vnikh/PycharmProjects/BINP37/Gene_Formatting.R")
 #Comparing GO between UT, 3hCA, 24hCA
 #First pathway
 #Nitric Oxide Metabolic Process
@@ -1157,7 +1150,7 @@ grid.arrange(heatmap_Ribosome_UT, heatmap_Ribosome_3hCA, heatmap_Ribosome_24hCA,
 ```{r}
 #Visualizing the common pathways in the three time points
 #response to cytokine-GO
-source("Gene_Formatting.R")
+source("C:/Users/vnikh/PycharmProjects/BINP37/Gene_Formatting.R")
 genes_24h <- c("BCLAF1", "SIRPA", "IL10RB", "IL10RA", "CREB1", "PRPF8", "TMSB4X", "SPI1", "LGALS9", "NDUFA13", "SH2B3", "ZFP36", "TAF9", "KIF5B", "TNFRSF18", "ENDOG", "MBP", "CD44", "CXCL1", "TPR", "ETV3", "CXCL3", "PYCARD", "CD40", "CD58", "UBE2G2", "TFRC", "PTPN2", "BIRC3", "PARP9", "RAD23B", "ACTR3", "TRIM44", "RNMT", "HCLS1", "IL13RA1", "TP53", "CYLD", "LAMP3", "CCL22", "PTPRC", "IFI16", "TANK", "ZFP36L1", "CSF2RA", "IFNGR1", "HCK", "IL7R", "CDC42", "TNFRSF4", "NRP2", "IFNAR1", "SETD2", "LAPTM5", "HIF1A", "EBI3", "GSN", "CSF2RB", "SAMHD1", "CD70")
 
 genes_3h <- format_gene_list("CXCL10/CCL3/ISG15/IFIT2/IFIT3/IFIH1/CXCL2/MX1/OAS1/IL1B/SOCS1/RNMT/USP18/TNFSF13B/XAF1/PARP14/ZFP36/IRF1/EIF2AK2/MX2/NMI/LGALS9/XRCC5/XBP1/PNPT1/SP100/B3GNT2/MIR142/IL3RA/TNFRSF4/PTPRC/GCLM/FCER1G/STAT3/BST2/CD38/ENDOG/NDUFA13/TRIM44/IFI16/CCL4/MTF2/LILRA4/MYD88/IRF8/ADAR/APPL1/NUB1/PML/DHX9")
@@ -1396,11 +1389,15 @@ heatmap_res_cyto__24hCA <- DoHeatmap(cluster.average_24hCA, features = genes, gr
 grid.arrange(heatmap_res_cyto__UT, heatmap_res_cyto__3hCA, heatmap_res_cyto__24hCA, ncol = 3)
 ```
 ```{r}
+library(tidyr)
 #PA
+#Subset according to stim
+pDC_PA_stim <- subset(pDC_combined, stim == "PA" | stim == "UT")
+
 #Response to Bacterium
 genes_UT <-format_gene_list("TNFAIP3/GPX1/GNLY/NR4A1/TSPO/PYCARD/C15orf48/ST13/CD36/IL1B/CCL5/S100A8/SOD2/FOS/S100A9/PPBP/LYZ")
 
-genes_3h <-format_gene_list("CXCL11/CXCL10/TNF/ISG15/CCL2/CMPK2/S100A9/C15orf48/IRF8/SOD2/TNFRSF1B/RGS1/ARID5A/WDR83/LYN/PLAC8/XBP1/FOS/PTGIR/LY96/HLA-E/RNASE6/SPN/NR4A1/TMF1/GSDMD/USP18/ADH5/LYZ/RNF213/FCER1G/CFD/JAK2/MAP2K7/CEBPB/HNRNPA0/IL6R/CARD16/HLA-B/CHMP5/RAB14/HERC6/HLA-A/CD96/CD274/CASP4/MAPK14/IFNAR1/GCH1/PYCARD/ERAP1/HADHB/PPP1R11")
+genes_3h<-format_gene_list("CXCL11/CXCL10/TNF/ISG15/CCL2/CMPK2/S100A9/C15orf48/IRF8/SOD2/TNFRSF1B/RGS1/ARID5A/WDR83/LYN/PLAC8/XBP1/FOS/PTGIR/LY96/HLA-E/RNASE6/SPN/NR4A1/TMF1/GSDMD/USP18/ADH5/LYZ/RNF213/FCER1G/CFD/JAK2/MAP2K7/CEBPB/HNRNPA0/IL6R/CARD16/HLA-B/CHMP5/RAB14/HERC6/HLA-A/CD96/CD274/CASP4/MAPK14/IFNAR1/GCH1/PYCARD/ERAP1/HADHB/PPP1R11")
 
 genes_24h <- format_gene_list("PLAC8/IL1B/S100A8/GNLY/RNF213/CEBPB/S100A9/FCER1G")
 
@@ -1409,63 +1406,91 @@ genes <- unique(c(genes_24h, genes_3h, genes_UT))
 heatmap_resp_bac__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
   theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
+saveRDS(heatmap_resp_bac__UT, file = "1.rds")
 heatmap_resp_bac__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
   scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
   guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
   theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
+saveRDS(heatmap_resp_bac__3hPA, file = "2.rds")
 heatmap_resp_bac__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
   scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
   guides(color = FALSE) + ggtitle("24hPA") +
   theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
+saveRDS(heatmap_resp_bac__24hPA, file = "3.rds")
 grid.arrange(heatmap_resp_bac__UT, heatmap_resp_bac__3hPA, heatmap_resp_bac__24hPA, ncol = 3)
-
 #Find Signature Scores
 genes_resp_bac <- genes
 
 #Subset the data based on the genes
-resp_bac <- subset(pDC_combined, features = genes_resp_bac)
-average_resp_bac <- AverageExpression(resp_bac,group.by = 'sex.treatment', features = genes_resp_bac,return.seurat = F)
-#Remove the first column
-average_resp_bac <-data.frame(average_resp_bac[1])
-#For UT
-average_resp_bac_female_UT <- (average_resp_bac$RNA.Female_UT)
-average_resp_bac_male_UT <- (average_resp_bac$RNA.Male_UT)
-#For 3h
-average_resp_bac_female_3hPA <- (average_resp_bac$RNA.Female_3hPA)
-average_resp_bac_male_3hPA <- (average_resp_bac$RNA.Male_3hPA)
-#For 24h
-average_resp_bac_female_24hPA <- (average_resp_bac$RNA.Female_24hPA)
-average_resp_bac_male_24hPA <- (average_resp_bac$RNA.Male_24hPA)
+#Subset the data based on the genes
+resp_bacma <- subset(pDC_combined, features = genes_resp_bac)
+average_resp_bac <- AverageExpression(pDC_combined,group.by = c('subject','treatment'),slot = "scale.data",features = genes_resp_bac,return.seurat = F)
 
-# Calculate Z-score for UT
-zscore_female_UT <- zscore(average_resp_bac_female_UT)
-zscore_male_UT <- zscore(average_resp_bac_male_UT)
+average_resp_bac_PA <- AverageExpression(pDC_PA_stim,group.by = c('subject','treatment'),slot = "scale.data",features = genes_resp_bac,return.seurat = F)
+meta <- pDC_combined@meta.data
+#Transpose the data
+average_resp_bac <- t(average_resp_bac$RNA)
 
-# Calculate Z-score for 3hPA
-zscore_female_3hPA <- zscore(average_resp_bac_female_3hPA)
-zscore_male_3hPA <- zscore(average_resp_bac_male_3hPA)
+#Convert the data to dataframe
+average_resp_bac <- as.data.frame(average_resp_bac)
 
-# Calculate Z-score for 24hPA
-zscore_female_24hPA <- zscore(average_resp_bac_female_24hPA)
-zscore_male_24hPA <- zscore(average_resp_bac_male_24hPA)
+#Find the row means
+average_resp_bac <- cbind(rownames(average_resp_bac),rowMeans(average_resp_bac))
 
-#Boxplot
-Response_Bacteria <- data.frame(
-  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
-  Gender = rep(c("Female", "Male"), times = 3),
-  Value = c(zscore_female_UT, zscore_male_UT,
-             zscore_female_3hPA, zscore_male_3hPA,
-             zscore_female_24hPA, zscore_male_24hPA)
-)
+#Convert to Dataframe
+average_resp_bac <- as.data.frame(average_resp_bac)
 
-ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+#Rename  columns into subject and timepoints
+average_resp_bac <- separate(average_resp_bac,col = "V1",into =c("subject","timepoints"),sep = "_")
+
+colnames(average_resp_bac) <- c("subject","timepoints","avg_exprerssion")
+
+#Convert to dataframe
+average_resp_bac <- as.data.frame(average_resp_bac)
+
+average_resp_bac$avg_exprerssion <- as.numeric(average_resp_bac$avg_exprerssion)
+
+#Find the z-score
+average_resp_bac$z_score <- zscore(average_resp_bac$avg_exprerssion)
+
+
+
+average_resp_bac$timepoints <-factor(average_resp_bac$timepoints)
+
+
+average_resp_bac$sex <- meta$sex[match(average_resp_bac$subject,meta$subject)]
+ggplot(average_resp_bac, aes(x = timepoints, y = z_score, color = sex)) +
   geom_boxplot() +
-  labs(title = "Z-Score for Selected Genes at Different Time Points",
-       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
-  theme_minimal()
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Response to Bacterium ") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+#Plotting the signature scores for Pseudomonas only
+average_resp_bac_PA <- t(average_resp_bac_PA$RNA)
+average_resp_bac_PA <- as.data.frame(average_resp_bac_PA)
+average_resp_bac_PA <- cbind(rownames(average_resp_bac_PA),rowMeans(average_resp_bac_PA))
+average_resp_bac_PA <- as.data.frame(average_resp_bac_PA)
+average_resp_bac_PA <- separate(average_resp_bac_PA,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_resp_bac_PA) <- c("subject","timepoints","avg_exprerssion")
+average_resp_bac_PA <- as.data.frame(average_resp_bac_PA)
+average_resp_bac_PA$avg_exprerssion <- as.numeric(average_resp_bac_PA$avg_exprerssion)
+average_resp_bac_PA$z_score <- zscore(average_resp_bac_PA$avg_exprerssion)
+average_resp_bac_PA$timepoints <-factor(average_resp_bac_PA$timepoints,levels = c("UT","3hPA","24hPA"))
+average_resp_bac_PA$sex <- meta$sex[match(average_resp_bac_PA$subject,meta$subject)]
+
+ggplot(average_resp_bac_PA, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Response to Bacterium in Pseudomonas Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 ```{r}
 #inflammatory response
@@ -1480,63 +1505,82 @@ genes <- unique(c(genes_24h, genes_3h, genes_UT))
 heatmap_infla__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
  scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
   theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
+saveRDS(heatmap_infla__UT, file = "1.rds")
 heatmap_infla__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
   scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
   guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
   theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
+saveRDS(heatmap_infla__3hPA, file = "2.rds")
 heatmap_infla__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
   scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
   guides(color = FALSE) + ggtitle("24hPA") +
   theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
+saveRDS(heatmap_infla__24hPA, file = "3.rds")
 grid.arrange(heatmap_infla__UT, heatmap_infla__3hPA, heatmap_infla__24hPA, ncol = 3)
 
 #Find Signature Scores
 genes_infla <- genes
 
+
 #Subset the data based on the genes
 inflama <- subset(pDC_combined, features = genes_infla)
-average_infla <- AverageExpression(inflama,group.by = 'sex.treatment', features = genes_infla,return.seurat = F)
-#Remove the first column
-average_infla <-data.frame(average_infla[1])
-#For UT
-average_infla_female_UT <- (average_infla$RNA.Female_UT)
-average_infla_male_UT <- (average_infla$RNA.Male_UT)
-#For 3h
-average_infla_female_3hPA <- (average_infla$RNA.Female_3hPA)
-average_infla_male_3hPA <- (average_infla$RNA.Male_3hPA)
-#For 24h
-average_infla_female_24hPA <- (average_infla$RNA.Female_24hPA)
-average_infla_male_24hPA <- (average_infla$RNA.Male_24hPA)
+average_infla <- AverageExpression(pDC_combined,group.by = c('subject','treatment'),slot = "scale.data",features = genes_infla,return.seurat = F)
+#Transpose the data
+average_infla <- t(average_infla$RNA)
+#Convert the data to dataframe
+average_infla <- as.data.frame(average_infla)
+#Find the row means
+average_infla <- cbind(rownames(average_infla),rowMeans(average_infla))
+#Convert to Dataframe
+average_infla <- as.data.frame(average_infla)
+#Rename  columns into subject and timepoints
+average_infla <- separate(average_infla,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_infla) <- c("subject","timepoints","avg_exprerssion")
+#Convert to dataframe
+average_infla <- as.data.frame(average_infla)
+average_infla$avg_exprerssion <- as.numeric(average_infla$avg_exprerssion)
+#Find the z-score
+average_infla$z_score <- zscore(average_infla$avg_exprerssion)
 
-# Calculate Z-score for UT
-zscore_female_UT <- zscore(average_infla_female_UT)
-zscore_male_UT <- zscore(average_infla_male_UT)
+meta <- pDC_combined@meta.data
+average_infla$timepoints <-factor(average_infla$timepoints)
+average_infla$sex <- meta$sex[match(average_infla$subject,meta$subject)]
 
-# Calculate Z-score for 3hPA
-zscore_female_3hPA <- zscore(average_infla_female_3hPA)
-zscore_male_3hPA <- zscore(average_infla_male_3hPA)
+#Remove NA data rows
+average_infla <- average_infla[complete.cases(average_infla),]
 
-# Calculate Z-score for 24hPA
-zscore_female_24hPA <- zscore(average_infla_female_24hPA)
-zscore_male_24hPA <- zscore(average_infla_male_24hPA)
-
-#Boxplot
-Response_Bacteria <- data.frame(
-  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
-  Gender = rep(c("Female", "Male"), times = 3),
-  Value = c(zscore_female_UT, zscore_male_UT,
-             zscore_female_3hPA, zscore_male_3hPA,
-             zscore_female_24hPA, zscore_male_24hPA)
-)
-
-ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+ggplot(average_infla, aes(x = timepoints, y = z_score, color = sex)) +
   geom_boxplot() +
-  labs(title = "Z-Score for Selected Genes at Different Time Points",
-       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
-  theme_minimal()
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Inflamatory Response") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#For only PA stimulated samples
+#Average expression of PA stimulated samples
+average_infla_PA <- AverageExpression(pDC_PA_stim,group.by = c('subject','treatment'),slot = "scale.data",features = genes_infla,return.seurat = F)
+average_infla_PA <- t(average_infla_PA$RNA)
+average_infla_PA <- as.data.frame(average_infla_PA)
+average_infla_PA <- cbind(rownames(average_infla_PA),rowMeans(average_infla_PA))
+average_infla_PA <- as.data.frame(average_infla_PA)
+average_infla_PA <- separate(average_infla_PA,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_infla_PA) <- c("subject","timepoints","avg_exprerssion")
+average_infla_PA <- as.data.frame(average_infla_PA)
+average_infla_PA$avg_exprerssion <- as.numeric(average_infla_PA$avg_exprerssion)
+average_infla_PA$z_score <- zscore(average_infla_PA$avg_exprerssion)
+average_infla_PA$timepoints <-factor(average_infla_PA$timepoints,levels = c("UT","3hPA","24hPA"))
+average_infla_PA$sex <- meta$sex[match(average_infla_PA$subject,meta$subject)]
+
+ggplot(average_infla_PA, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Inflamatory Response for Pseudomonas treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 ```{r}
 #blood vessel morphogenesis
@@ -1547,20 +1591,20 @@ genes_3h <- format_gene_list("CXCL10/TNF/CCL2/EREG/RGCC/JUN/KLF4/THBS1/CITED2/GA
 genes_24h <- format_gene_list("IL1B/RNF213/CXCR4/SAT1/TGFBR2/CCM2/SOX4/GNA13/JAK1/TNFAIP3/CCL2/ANXA2/BTG1/TNFAIP2/NRP2/PGK1/RAP1A/NINJ1/STK4/ADIPOR2/RBPJ/PPP1R16B/SP100/ITGB1/NFE2L2/HIF1A/SPHK1/SEMA4A/HTATIP2/AIMP1/EMC10/NOTCH2/GTF2I/CD40/ZMIZ1/ZFP36L1")
 
 genes <- unique(c(genes_24h, genes_3h, genes_UT))
-    heatmap_blood_morph__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+heatmap_blood_morph__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
       theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
-    heatmap_blood_morph__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+saveRDS(heatmap_blood_morph__UT, file = "1.rds")
+heatmap_blood_morph__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
       scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
       guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
       theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
-    heatmap_blood_morph__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+saveRDS(heatmap_blood_morph__3hPA, file = "2.rds")
+heatmap_blood_morph__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
       scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
       guides(color = FALSE) + ggtitle("24hPA") +
       theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
-
+saveRDS(heatmap_blood_morph__24hPA, file = "3.rds")
     grid.arrange(heatmap_blood_morph__UT, heatmap_blood_morph__3hPA, heatmap_blood_morph__24hPA, ncol = 3)
 #Subset the data based on the genes
 
@@ -1568,45 +1612,64 @@ genes_blood_morph <- genes
 
 #Subset the data based on the genes
 blood_morphma <- subset(pDC_combined, features = genes_blood_morph)
-average_blood_morph <- AverageExpression(blood_morphma,group.by = 'sex.treatment', features = genes_blood_morph,return.seurat = F)
-#Remove the first column
-average_blood_morph <-data.frame(average_blood_morph[1])
-#For UT
-average_blood_morph_female_UT <- (average_blood_morph$RNA.Female_UT)
-average_blood_morph_male_UT <- (average_blood_morph$RNA.Male_UT)
-#For 3h
-average_blood_morph_female_3hPA <- (average_blood_morph$RNA.Female_3hPA)
-average_blood_morph_male_3hPA <- (average_blood_morph$RNA.Male_3hPA)
-#For 24h
-average_blood_morph_female_24hPA <- (average_blood_morph$RNA.Female_24hPA)
-average_blood_morph_male_24hPA <- (average_blood_morph$RNA.Male_24hPA)
+average_blood_morph <- AverageExpression(pDC_combined,group.by = c('subject','treatment'),slot = "scale.data",features = genes_blood_morph,return.seurat = F)
 
-# Calculate Z-score for UT
-zscore_female_UT <- zscore(average_blood_morph_female_UT)
-zscore_male_UT <- zscore(average_blood_morph_male_UT)
+#Transpose the data
+average_blood_morph <- t(average_blood_morph$RNA)
+#Convert the data to dataframe
+average_blood_morph <- as.data.frame(average_blood_morph)
+#Find the row means
+average_blood_morph <- cbind(rownames(average_blood_morph),rowMeans(average_blood_morph))
+#Convert to Dataframe
+average_blood_morph <- as.data.frame(average_blood_morph)
+#Rename  columns into subject and timepoints
+average_blood_morph <- separate(average_blood_morph,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_blood_morph) <- c("subject","timepoints","avg_exprerssion")
+#Convert to dataframe
+average_blood_morph <- as.data.frame(average_blood_morph)
+average_blood_morph$avg_exprerssion <- as.numeric(average_blood_morph$avg_exprerssion)
+#Find the z-score
+average_blood_morph$z_score <- zscore(average_blood_morph$avg_exprerssion)
 
-# Calculate Z-score for 3hPA
-zscore_female_3hPA <- zscore(average_blood_morph_female_3hPA)
-zscore_male_3hPA <- zscore(average_blood_morph_male_3hPA)
+meta <- pDC_combined@meta.data
+average_blood_morph$timepoints <-factor(average_blood_morph$timepoints)
+average_blood_morph$sex <- meta$sex[match(average_blood_morph$subject,meta$subject)]
 
-# Calculate Z-score for 24hPA
-zscore_female_24hPA <- zscore(average_blood_morph_female_24hPA)
-zscore_male_24hPA <- zscore(average_blood_morph_male_24hPA)
+#Remove NA data rows
+average_blood_morph <- average_blood_morph[complete.cases(average_blood_morph),]
 
-#Boxplot
-Response_Bacteria <- data.frame(
-  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
-  Gender = rep(c("Female", "Male"), times = 3),
-  Value = c(zscore_female_UT, zscore_male_UT,
-             zscore_female_3hPA, zscore_male_3hPA,
-             zscore_female_24hPA, zscore_male_24hPA)
-)
-
-ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+ggplot(average_blood_morph, aes(x = timepoints, y = z_score, color = sex)) +
   geom_boxplot() +
-  labs(title = "Z-Score for Selected Genes at Different Time Points",
-       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
-  theme_minimal()
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Blood vessel Morphogenesis") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+#For PA treated samples
+#Average expression of PA stimulated samples
+average_blood_morph_PA <- AverageExpression(pDC_PA_stim,group.by = c('subject','treatment'),slot = "scale.data",features = genes_blood_morph,return.seurat = F)
+average_blood_morph_PA <- t(average_blood_morph_PA$RNA)
+average_blood_morph_PA <- as.data.frame(average_blood_morph_PA)
+average_blood_morph_PA <- cbind(rownames(average_blood_morph_PA),rowMeans(average_blood_morph_PA))
+average_blood_morph_PA <- as.data.frame(average_blood_morph_PA)
+average_blood_morph_PA <- separate(average_blood_morph_PA,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_blood_morph_PA) <- c("subject","timepoints","avg_exprerssion")
+average_blood_morph_PA <- as.data.frame(average_blood_morph_PA)
+average_blood_morph_PA$avg_exprerssion <- as.numeric(average_blood_morph_PA$avg_exprerssion)
+average_blood_morph_PA$z_score <- zscore(average_blood_morph_PA$avg_exprerssion)
+average_blood_morph_PA$timepoints <-factor(average_blood_morph_PA$timepoints,levels = c("UT","3hPA","24hPA"))
+average_blood_morph_PA$sex <- meta$sex[match(average_blood_morph_PA$subject,meta$subject)]
+ggplot(average_blood_morph_PA, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Blood vessel Morphogenesis for Pseudomonas Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 ```{r}
 #immune response
@@ -1638,45 +1701,63 @@ genes_immune_res <- genes
 
 #Subset the data based on the genes
 immune_resma <- subset(pDC_combined, features = genes_immune_res)
-average_immune_res <- AverageExpression(immune_resma,group.by = 'sex.treatment', features = genes_immune_res,return.seurat = F)
-#Remove the first column
-average_immune_res <-data.frame(average_immune_res[1])
-#For UT
-average_immune_res_female_UT <- (average_immune_res$RNA.Female_UT)
-average_immune_res_male_UT <- (average_immune_res$RNA.Male_UT)
-#For 3h
-average_immune_res_female_3hPA <- (average_immune_res$RNA.Female_3hPA)
-average_immune_res_male_3hPA <- (average_immune_res$RNA.Male_3hPA)
-#For 24h
-average_immune_res_female_24hPA <- (average_immune_res$RNA.Female_24hPA)
-average_immune_res_male_24hPA <- (average_immune_res$RNA.Male_24hPA)
+average_immune_res <- AverageExpression(pDC_combined,group.by = c('subject','treatment'),slot = "scale.data",features = genes_immune_res,return.seurat = F)
 
-# Calculate Z-score for UT
-zscore_female_UT <- zscore(average_immune_res_female_UT)
-zscore_male_UT <- zscore(average_immune_res_male_UT)
+#Transpose the data
+average_immune_res <- t(average_immune_res$RNA)
+#Convert the data to dataframe
+average_immune_res <- as.data.frame(average_immune_res)
+#Find the row means
+average_immune_res <- cbind(rownames(average_immune_res),rowMeans(average_immune_res))
+#Convert to Dataframe
+average_immune_res <- as.data.frame(average_immune_res)
+#Rename  columns into subject and timepoints
+average_immune_res <- separate(average_immune_res,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_immune_res) <- c("subject","timepoints","avg_exprerssion")
+#Convert to dataframe
+average_immune_res <- as.data.frame(average_immune_res)
+average_immune_res$avg_exprerssion <- as.numeric(average_immune_res$avg_exprerssion)
+#Find the z-score
+average_immune_res$z_score <- zscore(average_immune_res$avg_exprerssion)
 
-# Calculate Z-score for 3hPA
-zscore_female_3hPA <- zscore(average_immune_res_female_3hPA)
-zscore_male_3hPA <- zscore(average_immune_res_male_3hPA)
+meta <- pDC_combined@meta.data
+average_immune_res$timepoints <-factor(average_immune_res$timepoints)
+average_immune_res$sex <- meta$sex[match(average_immune_res$subject,meta$subject)]
 
-# Calculate Z-score for 24hPA
-zscore_female_24hPA <- zscore(average_immune_res_female_24hPA)
-zscore_male_24hPA <- zscore(average_immune_res_male_24hPA)
+#Remove NA data rows
+average_immune_res <- average_immune_res[complete.cases(average_immune_res),]
 
-#Boxplot
-Response_Bacteria <- data.frame(
-  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
-  Gender = rep(c("Female", "Male"), times = 3),
-  Value = c(zscore_female_UT, zscore_male_UT,
-             zscore_female_3hPA, zscore_male_3hPA,
-             zscore_female_24hPA, zscore_male_24hPA)
-)
-
-ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+ggplot(average_immune_res, aes(x = timepoints, y = z_score, color = sex)) +
   geom_boxplot() +
-  labs(title = "Z-Score for Selected Genes at Different Time Points",
-       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
-  theme_minimal()
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Immune Response") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#For PA treated samples
+#Average expression of PA stimulated samples
+average_immune_res_PA <- AverageExpression(pDC_PA_stim,group.by = c('subject','treatment'),slot = "scale.data",features = genes_immune_res,return.seurat = F)
+average_immune_res_PA <- t(average_immune_res_PA$RNA)
+average_immune_res_PA <- as.data.frame(average_immune_res_PA)
+average_immune_res_PA <- cbind(rownames(average_immune_res_PA),rowMeans(average_immune_res_PA))
+average_immune_res_PA <- as.data.frame(average_immune_res_PA)
+average_immune_res_PA <- separate(average_immune_res_PA,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_immune_res_PA) <- c("subject","timepoints","avg_exprerssion")
+average_immune_res_PA <- as.data.frame(average_immune_res_PA)
+average_immune_res_PA$avg_exprerssion <- as.numeric(average_immune_res_PA$avg_exprerssion)
+average_immune_res_PA$z_score <- zscore(average_immune_res_PA$avg_exprerssion)
+average_immune_res_PA$timepoints <-factor(average_immune_res_PA$timepoints,levels = c("UT","3hPA","24hPA"))
+average_immune_res_PA$sex <- meta$sex[match(average_immune_res_PA$subject,meta$subject)]
+ggplot(average_immune_res_PA, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Immune Response for Pseudomonas Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 ```{r}
 #response to cytokine
@@ -1708,45 +1789,63 @@ genes_res_cyto <- genes
 
 #Subset the data based on the genes
 res_cytoma <- subset(pDC_combined, features = genes_res_cyto)
-average_res_cyto <- AverageExpression(res_cytoma,group.by = 'sex.treatment', features = genes_res_cyto,return.seurat = F)
-#Remove the first column
-average_res_cyto <-data.frame(average_res_cyto[1])
-#For UT
-average_res_cyto_female_UT <- (average_res_cyto$RNA.Female_UT)
-average_res_cyto_male_UT <- (average_res_cyto$RNA.Male_UT)
-#For 3h
-average_res_cyto_female_3hPA <- (average_res_cyto$RNA.Female_3hPA)
-average_res_cyto_male_3hPA <- (average_res_cyto$RNA.Male_3hPA)
-#For 24h
-average_res_cyto_female_24hPA <- (average_res_cyto$RNA.Female_24hPA)
-average_res_cyto_male_24hPA <- (average_res_cyto$RNA.Male_24hPA)
+average_res_cyto <- AverageExpression(pDC_combined,group.by = c('subject','treatment'),slot = "scale.data",features = genes_res_cyto,return.seurat = F)
 
-# Calculate Z-score for UT
-zscore_female_UT <- zscore(average_res_cyto_female_UT)
-zscore_male_UT <- zscore(average_res_cyto_male_UT)
+#Transpose the data
+average_res_cyto <- t(average_res_cyto$RNA)
+#Convert the data to dataframe
+average_res_cyto <- as.data.frame(average_res_cyto)
+#Find the row means
+average_res_cyto <- cbind(rownames(average_res_cyto),rowMeans(average_res_cyto))
+#Convert to Dataframe
+average_res_cyto <- as.data.frame(average_res_cyto)
+#Rename  columns into subject and timepoints
+average_res_cyto <- separate(average_res_cyto,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_res_cyto) <- c("subject","timepoints","avg_exprerssion")
+#Convert to dataframe
+average_res_cyto <- as.data.frame(average_res_cyto)
+average_res_cyto$avg_exprerssion <- as.numeric(average_res_cyto$avg_exprerssion)
+#Find the z-score
+average_res_cyto$z_score <- zscore(average_res_cyto$avg_exprerssion)
 
-# Calculate Z-score for 3hPA
-zscore_female_3hPA <- zscore(average_res_cyto_female_3hPA)
-zscore_male_3hPA <- zscore(average_res_cyto_male_3hPA)
+meta <- pDC_combined@meta.data
+average_res_cyto$timepoints <-factor(average_res_cyto$timepoints)
+average_res_cyto$sex <- meta$sex[match(average_res_cyto$subject,meta$subject)]
 
-# Calculate Z-score for 24hPA
-zscore_female_24hPA <- zscore(average_res_cyto_female_24hPA)
-zscore_male_24hPA <- zscore(average_res_cyto_male_24hPA)
+#Remove NA data rows
+average_res_cyto <- average_res_cyto[complete.cases(average_res_cyto),]
 
-#Boxplot
-Response_Bacteria <- data.frame(
-  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
-  Gender = rep(c("Female", "Male"), times = 3),
-  Value = c(zscore_female_UT, zscore_male_UT,
-             zscore_female_3hPA, zscore_male_3hPA,
-             zscore_female_24hPA, zscore_male_24hPA)
-)
-
-ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+ggplot(average_res_cyto, aes(x = timepoints, y = z_score, color = sex)) +
   geom_boxplot() +
-  labs(title = "Z-Score for Selected Genes at Different Time Points",
-       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
-  theme_minimal()
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Response to Cytokine") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#For PA treated samples
+#Average expression of PA stimulated samples
+average_res_cyto_PA <- AverageExpression(pDC_PA_stim,group.by = c('subject','treatment'),slot = "scale.data",features = genes_res_cyto,return.seurat = F)
+average_res_cyto_PA <- t(average_res_cyto_PA$RNA)
+average_res_cyto_PA <- as.data.frame(average_res_cyto_PA)
+average_res_cyto_PA <- cbind(rownames(average_res_cyto_PA),rowMeans(average_res_cyto_PA))
+average_res_cyto_PA <- as.data.frame(average_res_cyto_PA)
+average_res_cyto_PA <- separate(average_res_cyto_PA,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_res_cyto_PA) <- c("subject","timepoints","avg_exprerssion")
+average_res_cyto_PA <- as.data.frame(average_res_cyto_PA)
+average_res_cyto_PA$avg_exprerssion <- as.numeric(average_res_cyto_PA$avg_exprerssion)
+average_res_cyto_PA$z_score <- zscore(average_res_cyto_PA$avg_exprerssion)
+average_res_cyto_PA$timepoints <-factor(average_res_cyto_PA$timepoints,levels = c("UT","3hPA","24hPA"))
+average_res_cyto_PA$sex <- meta$sex[match(average_res_cyto_PA$subject,meta$subject)]
+ggplot(average_res_cyto_PA, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Response to cytokine for Pseudomonas Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 ```{r}
 #cytokine-mediated signaling pathway
@@ -1778,45 +1877,62 @@ genes_cyto_sig <- genes
 
 #Subset the data based on the genes
 cyto_sigma <- subset(pDC_combined, features = genes_cyto_sig)
-average_cyto_sig <- AverageExpression(cyto_sigma,group.by = 'sex.treatment', features = genes_cyto_sig,return.seurat = F)
-#Remove the first column
-average_cyto_sig <-data.frame(average_cyto_sig[1])
-#For UT
-average_cyto_sig_female_UT <- (average_cyto_sig$RNA.Female_UT)
-average_cyto_sig_male_UT <- (average_cyto_sig$RNA.Male_UT)
-#For 3h
-average_cyto_sig_female_3hPA <- (average_cyto_sig$RNA.Female_3hPA)
-average_cyto_sig_male_3hPA <- (average_cyto_sig$RNA.Male_3hPA)
-#For 24h
-average_cyto_sig_female_24hPA <- (average_cyto_sig$RNA.Female_24hPA)
-average_cyto_sig_male_24hPA <- (average_cyto_sig$RNA.Male_24hPA)
+average_cyto_sig <- AverageExpression(pDC_combined,group.by = c('subject','treatment'),slot = "scale.data",features = genes_cyto_sig,return.seurat = F)
 
-# Calculate Z-score for UT
-zscore_female_UT <- zscore(average_cyto_sig_female_UT)
-zscore_male_UT <- zscore(average_cyto_sig_male_UT)
+#Transpose the data
+average_cyto_sig <- t(average_cyto_sig$RNA)
+#Convert the data to dataframe
+average_cyto_sig <- as.data.frame(average_cyto_sig)
+#Find the row means
+average_cyto_sig <- cbind(rownames(average_cyto_sig),rowMeans(average_cyto_sig))
+#Convert to Dataframe
+average_cyto_sig <- as.data.frame(average_cyto_sig)
+#Rename  columns into subject and timepoints
+average_cyto_sig <- separate(average_cyto_sig,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_cyto_sig) <- c("subject","timepoints","avg_exprerssion")
+#Convert to dataframe
+average_cyto_sig <- as.data.frame(average_cyto_sig)
+average_cyto_sig$avg_exprerssion <- as.numeric(average_cyto_sig$avg_exprerssion)
+#Find the z-score
+average_cyto_sig$z_score <- zscore(average_cyto_sig$avg_exprerssion)
 
-# Calculate Z-score for 3hPA
-zscore_female_3hPA <- zscore(average_cyto_sig_female_3hPA)
-zscore_male_3hPA <- zscore(average_cyto_sig_male_3hPA)
+meta <- pDC_combined@meta.data
+average_cyto_sig$timepoints <-factor(average_cyto_sig$timepoints)
+average_cyto_sig$sex <- meta$sex[match(average_cyto_sig$subject,meta$subject)]
 
-# Calculate Z-score for 24hPA
-zscore_female_24hPA <- zscore(average_cyto_sig_female_24hPA)
-zscore_male_24hPA <- zscore(average_cyto_sig_male_24hPA)
+#Remove NA data rows
+average_cyto_sig <- average_cyto_sig[complete.cases(average_cyto_sig),]
 
-#Boxplot
-Response_Bacteria <- data.frame(
-  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
-  Gender = rep(c("Female", "Male"), times = 3),
-  Value = c(zscore_female_UT, zscore_male_UT,
-             zscore_female_3hPA, zscore_male_3hPA,
-             zscore_female_24hPA, zscore_male_24hPA)
-)
-
-ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+ggplot(average_cyto_sig, aes(x = timepoints, y = z_score, color = sex)) +
   geom_boxplot() +
-  labs(title = "Z-Score for Selected Genes at Different Time Points",
-       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
-  theme_minimal()
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Cytokine-Mediated Signalling Pathway") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#Average expression of PA stimulated samples
+average_cyto_sig_PA <- AverageExpression(pDC_PA_stim,group.by = c('subject','treatment'),slot = "scale.data",features = genes_cyto_sig,return.seurat = F)
+average_cyto_sig_PA <- t(average_cyto_sig_PA$RNA)
+average_cyto_sig_PA <- as.data.frame(average_cyto_sig_PA)
+average_cyto_sig_PA <- cbind(rownames(average_cyto_sig_PA),rowMeans(average_cyto_sig_PA))
+average_cyto_sig_PA <- as.data.frame(average_cyto_sig_PA)
+average_cyto_sig_PA <- separate(average_cyto_sig_PA,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_cyto_sig_PA) <- c("subject","timepoints","avg_exprerssion")
+average_cyto_sig_PA <- as.data.frame(average_cyto_sig_PA)
+average_cyto_sig_PA$avg_exprerssion <- as.numeric(average_cyto_sig_PA$avg_exprerssion)
+average_cyto_sig_PA$z_score <- zscore(average_cyto_sig_PA$avg_exprerssion)
+average_cyto_sig_PA$timepoints <-factor(average_cyto_sig_PA$timepoints,levels = c("UT","3hPA","24hPA"))
+average_cyto_sig_PA$sex <- meta$sex[match(average_cyto_sig_PA$subject,meta$subject)]
+ggplot(average_cyto_sig_PA, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Cytokine Mediated signalling pathway for Pseudomonas Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 ```{r}
 #response to biotic stimulus
@@ -1828,65 +1944,169 @@ genes_24h <- format_gene_list("C15orf48/SOD2/PLAC8/CCL4/IL1B/S100A8/GNLY/RNF213/
 
 genes <- unique(c(genes_UT, genes_3h, genes_24h))
 
-heatmap_cyto_sig__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+heatmap_biotic__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
       theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
 
-    heatmap_cyto_sig__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+    heatmap_biotic__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
       scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
       guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
       theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
 
-    heatmap_cyto_sig__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+    heatmap_biotic__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
       scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
       guides(color = FALSE) + ggtitle("24hPA") +
       theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
 
-    grid.arrange(heatmap_cyto_sig__UT, heatmap_cyto_sig__3hPA, heatmap_cyto_sig__24hPA, ncol = 3)
+    grid.arrange(heatmap_biotic__UT, heatmap_biotic__3hPA, heatmap_biotic__24hPA, ncol = 3)
 #Subset the data based on the genes
 
-genes_cyto_sig <- genes
+genes_biotic <- genes
 
 #Subset the data based on the genes
-cyto_sigma <- subset(pDC_combined, features = genes_cyto_sig)
-average_cyto_sig <- AverageExpression(cyto_sigma,group.by = 'sex.treatment', features = genes_cyto_sig,return.seurat = F)
-#Remove the first column
-average_cyto_sig <-data.frame(average_cyto_sig[1])
-#For UT
-average_cyto_sig_female_UT <- (average_cyto_sig$RNA.Female_UT)
-average_cyto_sig_male_UT <- (average_cyto_sig$RNA.Male_UT)
-#For 3h
-average_cyto_sig_female_3hPA <- (average_cyto_sig$RNA.Female_3hPA)
-average_cyto_sig_male_3hPA <- (average_cyto_sig$RNA.Male_3hPA)
-#For 24h
-average_cyto_sig_female_24hPA <- (average_cyto_sig$RNA.Female_24hPA)
-average_cyto_sig_male_24hPA <- (average_cyto_sig$RNA.Male_24hPA)
+bioticma <- subset(pDC_combined, features = genes_biotic)
+average_biotic <- AverageExpression(pDC_combined,group.by = c('subject','treatment'),slot = "scale.data",features = genes_biotic,return.seurat = F)
 
-# Calculate Z-score for UT
-zscore_female_UT <- zscore(average_cyto_sig_female_UT)
-zscore_male_UT <- zscore(average_cyto_sig_male_UT)
+#Transpose the data
+average_biotic <- t(average_biotic$RNA)
+#Convert the data to dataframe
+average_biotic <- as.data.frame(average_biotic)
+#Find the row means
+average_biotic <- cbind(rownames(average_biotic),rowMeans(average_biotic))
+#Convert to Dataframe
+average_biotic <- as.data.frame(average_biotic)
+#Rename  columns into subject and timepoints
+average_biotic <- separate(average_biotic,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_biotic) <- c("subject","timepoints","avg_exprerssion")
+#Convert to dataframe
+average_biotic <- as.data.frame(average_biotic)
+average_biotic$avg_exprerssion <- as.numeric(average_biotic$avg_exprerssion)
+#Find the z-score
+average_biotic$z_score <- zscore(average_biotic$avg_exprerssion)
 
-# Calculate Z-score for 3hPA
-zscore_female_3hPA <- zscore(average_cyto_sig_female_3hPA)
-zscore_male_3hPA <- zscore(average_cyto_sig_male_3hPA)
+meta <- pDC_combined@meta.data
+average_biotic$timepoints <-factor(average_biotic$timepoints)
+average_biotic$sex <- meta$sex[match(average_biotic$subject,meta$subject)]
 
-# Calculate Z-score for 24hPA
-zscore_female_24hPA <- zscore(average_cyto_sig_female_24hPA)
-zscore_male_24hPA <- zscore(average_cyto_sig_male_24hPA)
+#Remove NA data rows
+average_biotic <- average_biotic[complete.cases(average_biotic),]
 
-#Boxplot
-Response_Bacteria <- data.frame(
-  Group = rep(c("UT", "3hPA", "24hPA"), each = 2),
-  Gender = rep(c("Female", "Male"), times = 3),
-  Value = c(zscore_female_UT, zscore_male_UT,
-             zscore_female_3hPA, zscore_male_3hPA,
-             zscore_female_24hPA, zscore_male_24hPA)
-)
-
-ggplot(Response_Bacteria, aes(x = Group, y = Value, fill = Gender)) +
+ggplot(average_biotic, aes(x = timepoints, y = z_score, color = sex)) +
   geom_boxplot() +
-  labs(title = "Z-Score for Selected Genes at Different Time Points",
-       x = "Time Point", y = "Z-Score") + ylim(-3,6) +
-  theme_minimal()
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Response to Biotic Stimuls") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 
+#Average expression of PA stimulated samples
+average_biotic_PA <- AverageExpression(pDC_PA_stim,group.by = c('subject','treatment'),slot = "scale.data",features = genes_biotic,return.seurat = F)
+average_biotic_PA <- t(average_biotic_PA$RNA)
+average_biotic_PA <- as.data.frame(average_biotic_PA)
+average_biotic_PA <- cbind(rownames(average_biotic_PA),rowMeans(average_biotic_PA))
+average_biotic_PA <- as.data.frame(average_biotic_PA)
+average_biotic_PA <- separate(average_biotic_PA,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_biotic_PA) <- c("subject","timepoints","avg_exprerssion")
+average_biotic_PA <- as.data.frame(average_biotic_PA)
+average_biotic_PA$avg_exprerssion <- as.numeric(average_biotic_PA$avg_exprerssion)
+average_biotic_PA$z_score <- zscore(average_biotic_PA$avg_exprerssion)
+average_biotic_PA$timepoints <-factor(average_biotic_PA$timepoints,levels = c("UT","3hPA","24hPA"))
+average_biotic_PA$sex <- meta$sex[match(average_biotic_PA$subject,meta$subject)]
+ggplot(average_biotic_PA, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Response to biotic stimulus for Pseudomonas Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+```{r}
+#Cell-Cell Adhesion
+genes_UT <- format_gene_list("SPI1/ICAM3/CYFIP2/MSN/ACTG1/MYADM/DNAJB6/ANXA2/ACTB/PLAUR/PTEN/MAP3K8/CD44/SOX4/FXYD5/ITGAE/KLF4/PYCARD/ZFP36L1/RGCC/FLNA/LGALS1/IL1B/CCL5/AIF1/S100A8/S100A9")
+
+genes_3h <- format_gene_list("CCL2/S100A9/IRF1/ANXA1/S100A11/S100A8/SOCS1/CLIC1/RUNX3/HLA-E/LYN/CD44/ADAM19/ANXA2/HLA-A/PTPRC/IL1RN/SPN/LAPTM5/FERMT3/SMARCC1/PTPN2/XBP1/FXYD5/EMB/MSN/MYL12A/ACTB/CD99/TNFSF13B/CD164")
+
+genes_24h <- format_gene_list("HLA-DRB5/IL1B/S100A8/IL2RA/CCL5/CEBPB/S100A9/VMP1/HLA-DOA/CORO1A/TGFBR2/CD58/SOX4/JAK1/ADAM19/PTPN2/BAD/LIMS1/LGALS3/CD44/PTPRC/NFKBIZ/CCL2/ANXA2/HLA-E/IL4I1/BRD7/HSPD1/MSN/NINJ1/FXYD5/CD2AP/IL2RG/TYK2/ICAM1/CTNNA1")
+
+genes <- unique(c(genes_UT,genes_3h,genes_24h))
+
+heatmap_cell_cell__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
+     scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_cell_cell__3hPA <- DoHeatmap(cluster.average_3hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(fill = FALSE, color = FALSE) + ggtitle("3hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    heatmap_cell_cell__24hPA <- DoHeatmap(cluster.average_24hPA, features = genes, group.by = 'sex', draw.lines = TRUE) +
+      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) +
+      guides(color = FALSE) + ggtitle("24hPA") +
+      theme(plot.title = element_text(hjust = 0.5), axis.text.y = element_blank(), plot.margin = unit(c(1, 0, 1, 1), "cm"))
+
+    grid.arrange(heatmap_cell_cell__UT, heatmap_cell_cell__3hPA, heatmap_cell_cell__24hPA, ncol = 3)
+#Subset the data based on the genes
+
+genes_cell_cell <- genes
+
+#Subset the data based on the genes
+cell_cellma <- subset(pDC_combined, features = genes_cell_cell)
+average_cell_cell <- AverageExpression(pDC_combined,group.by = c('subject','treatment'),slot = "scale.data",features = genes_cell_cell,return.seurat = F)
+
+#Transpose the data
+average_cell_cell <- t(average_cell_cell$RNA)
+#Convert the data to dataframe
+average_cell_cell <- as.data.frame(average_cell_cell)
+#Find the row means
+average_cell_cell <- cbind(rownames(average_cell_cell),rowMeans(average_cell_cell))
+#Convert to Dataframe
+average_cell_cell <- as.data.frame(average_cell_cell)
+#Rename  columns into subject and timepoints
+average_cell_cell <- separate(average_cell_cell,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_cell_cell) <- c("subject","timepoints","avg_exprerssion")
+#Convert to dataframe
+average_cell_cell <- as.data.frame(average_cell_cell)
+average_cell_cell$avg_exprerssion <- as.numeric(average_cell_cell$avg_exprerssion)
+#Find the z-score
+average_cell_cell$z_score <- zscore(average_cell_cell$avg_exprerssion)
+
+meta <- pDC_combined@meta.data
+average_cell_cell$timepoints <-factor(average_cell_cell$timepoints)
+average_cell_cell$sex <- meta$sex[match(average_cell_cell$subject,meta$subject)]
+
+#Remove NA data rows
+average_cell_cell <- average_cell_cell[complete.cases(average_cell_cell),]
+
+ggplot(average_cell_cell, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Cell-Cell Adhesion") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#Average expression of PA stimulated samples
+average_cell_cell_PA <- AverageExpression(pDC_PA_stim,group.by = c('subject','treatment'),slot = "scale.data",features = genes_cell_cell,return.seurat = F)
+average_cell_cell_PA <- t(average_cell_cell_PA$RNA)
+average_cell_cell_PA <- as.data.frame(average_cell_cell_PA)
+average_cell_cell_PA <- cbind(rownames(average_cell_cell_PA),rowMeans(average_cell_cell_PA))
+average_cell_cell_PA <- as.data.frame(average_cell_cell_PA)
+average_cell_cell_PA <- separate(average_cell_cell_PA,col = "V1",into =c("subject","timepoints"),sep = "_")
+colnames(average_cell_cell_PA) <- c("subject","timepoints","avg_exprerssion")
+average_cell_cell_PA <- as.data.frame(average_cell_cell_PA)
+average_cell_cell_PA$avg_exprerssion <- as.numeric(average_cell_cell_PA$avg_exprerssion)
+average_cell_cell_PA$z_score <- zscore(average_cell_cell_PA$avg_exprerssion)
+average_cell_cell_PA$timepoints <-factor(average_cell_cell_PA$timepoints,levels = c("UT","3hPA","24hPA"))
+average_cell_cell_PA$sex <- meta$sex[match(average_cell_cell_PA$subject,meta$subject)]
+ggplot(average_cell_cell_PA, aes(x = timepoints, y = z_score, color = sex)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + # add a dashed red line at y=0
+  xlab("Timepoint") +
+  ylab("Zscore") +
+  ggtitle("Cell-Cell Adhesion for Pseudomonas Treatment") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```

@@ -24,15 +24,17 @@ The data is available in the following files:
 
 Loading in the required packages and data
 ```{r load_packages, message=FALSE, warning=FALSE}
+#Setting working directory
+setwd("E:/Bioinformatics/Semester2/BINP37")
 #Load the required packages
-library(Seurat)
-library(dplyr)
-library(ggplot2)
-library(patchwork)
-library(rtracklayer)
-library(methods)
-library(Matrix)
-library(monocle3)
+suppressMessages(library(Seurat))
+suppressMessages(library(dplyr))
+suppressMessages(library(ggplot2))
+suppressMessages(library(patchwork))
+suppressMessages(library(rtracklayer))
+suppressMessages(library(methods))
+suppressMessages(library(Matrix))
+suppressMessages(library(monocle3))
 
 # Load the data
 # Set file paths
@@ -61,7 +63,7 @@ Creating a Seurat object using the data to start analysing them.
 ```{r}
 blood_healthy <- CreateSeuratObject(counts = counts, project = "blood_healthy", min.cells = 3, min.features = 200,Idents =cell_types$cell_type)
 #saveRDS(blood_healthy,file="blood_healthy.rds")
-blood_healthy<- readRDS("Reusable data/blood_healthy.rds")
+blood_healthy<- readRDS("blood_healthy.rds")
 ```
 
 Sorting the barcodes file to make sure they are in order and mapping them with the seurat object
@@ -78,6 +80,38 @@ treatment_ordered <- treatment[match(colnames(blood_healthy), treatment$barcode)
 blood_healthy[["treatment"]] <- treatment_ordered$timepoint
 blood_healthy[["subject"]] <- treatment_ordered$assignment
 blood_healthy[["percent.mt"]] <- PercentageFeatureSet(blood_healthy, pattern = "^MT-")
+
+#Visualization of the blood healthy dataset Uncomment if needed
+
+# Visualize the number of cell counts per cell_type via barplot
+metadata <- blood_healthy@meta.data
+metadata %>%
+  	ggplot(aes(x=cell_type, fill=cell_type)) +
+  	geom_bar() +
+  	theme_classic() +
+  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  	theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  	ggtitle("Cell Count per cell type")
+
+# Visualize the distribution of genes detected per cell_type via histogram
+metadata %>%
+  	ggplot(aes(color=cell_type, x=nFeature_RNA, fill= cell_type)) +
+  	geom_density(alpha = 0.2) +
+  	theme_classic() +
+  	scale_x_log10() +
+  	geom_vline(xintercept = c(200, 2500), linetype = "dashed", color = "red")
+
+#Visualize the percent mt. genes per subject
+metadata %>%
+  	ggplot(aes(color=cell_type, x=percent.mt, fill= cell_type)) +
+  	geom_density(alpha = 0.2) +
+  	theme_classic() +
+  	scale_x_log10() +
+  	geom_vline(xintercept = c(5), linetype = "dashed", color = "red")
+
+#Idents(blood_healthy) <- "RNA"
+#plot_qc <- VlnPlot(blood_healthy, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3,pt.size = 0)
+#saveRDS(plot_qc,file="plot_qc.rds")
 ```
 The data is now ready to be analysed.We will start with the QC analysis after which we Normalise the data and find the variable features in the cells.
 ```{r}
@@ -144,8 +178,8 @@ We will now select the pDC cells and perform the analysis on them.
 # Subset the original object
 pDC <- subset(blood_healthy, subset = cell_type == "pDC")
 
-saveRDS(pDC,file="pDC_mod.rds")
-pDC <-readRDS("pDC_mod.rds")
+#saveRDS(pDC,file="pDC_mod.rds")
+#pDC <-readRDS("pDC_mod.rds")
 #Visualise the pDC cells using DimPlot
 DimPlot(pDC, label = TRUE, group.by = "treatment")
 ggsave("DimPlot_pDC_treatment.png")
@@ -186,26 +220,13 @@ y_genes_mean_expr <- rowMeans(y_genes_expr$RNA)
 y_genes_mean_expr <- y_genes_mean_expr > 1
 #Select only the genes names with True value
 y_genes_present_fil <- y_genes_present[y_genes_mean_expr]
-#%%
-# Calculate 95th percentile value for all the genes in y_genes_present
-qval1 <- quantile(pDC_meta@assays$RNA@data["USP9Y",], probs = 0.9625)
-qvals[1] <- quantile(pDC_meta@assays$RNA@data["EIF1AY",], probs = 0.85)
-qval5 <- quantile(pDC_meta@assays$RNA@data["KDM5D",], probs = 0.9625)
-qval6 <- quantile(pDC_meta@assays$RNA@data["RPS4Y1",], probs = 0.9625)
-qval7 <- quantile(pDC_meta@assays$RNA@data["ZFY",], probs = 0.9625)
-qval9 <- quantile(pDC_meta@assays$RNA@data["DDX3Y",], probs = 0.9625)
-qval10 <- quantile(pDC_meta@assays$RNA@data["UTY",], probs = 0.9625)
-Male <- do.call("rbind", Male_list)
-
-Male <- subset(pDC_meta, subset = USP9Y > qval1 | EIF1AY > qval2 | KDM5D > qval5 | RPS4Y1 > qval6 | ZFY > qval7 | DDX3Y > qval9 | UTY > qval10)
-#%%
 #Trying out the filter
 qvals <- vector(length = length(y_genes_present_fil))
 for (i in seq_along(y_genes_present_fil)) {
-  qvals[i] <- quantile(pDC_meta@assays$RNA@data[y_genes_present_fil[i], ], probs = 0.85)
+  qvals[i] <- quantile(pDC_meta@assays$RNA@data[y_genes_present_fil[i], ], probs = 0.95)
 }
 
-Male <-subset(pDC_meta,subset = EIF1AY > qvals[1])
+Male <-subset(pDC_meta,subset = EIF1AY > qvals[1] | RPS4Y1 >qvals[2])
 
 #Add sex to the meta data
 Male <- AddMetaData(Male, metadata = data.frame(sex = rep("male", nrow(Male@meta.data))))
@@ -225,11 +246,7 @@ for (subject in matching_subjects) {
 pDC@meta.data$sex <- ifelse(is.na(pDC@meta.data$sex), "Female", pDC@meta.data$sex)
 saveRDS(pDC,file="pDC_sex.rds")
 pDC <- readRDS(file = "pDC_sex.rds")
-# Code block used for adding sexes after assigning it in another copy of pDC
-#pDC_final <- readRDS(file="pDC_final_sex.rds")
-#Add the metadata from the pDC_final to the pDC
-#subject_sex <- pDC_final@meta.data[, c("subject", "sex")]
-#pDC@meta.data$sex <- subject_sex[match(pDC@meta.data$subject, subject_sex$subject), "sex"]
+
 DimPlot(pDC)
 #Analyse the pDC clusters
 cells_per_subject <- table(pDC@meta.data$subject)
@@ -312,7 +329,8 @@ ggsave("Female_treat_UMAP.png")
 
 #Now performing PCA on the combined dataset
 pDC <- NormalizeData(pDC)
-pDC <- RunPCA(pDC, features = VariableFeatures(object = pDC))
+pDC <- ScaleData(pDC)
+pDC <- RunPCA(pDC, features = rownames(pDC))
 DimPlot(pDC, reduction = "pca", group.by = "treatment",label = TRUE)
 ggsave("pDC_treat_pca.png")
 DimPlot(pDC,reduction = "pca",group.by = c("sex","treatment"),label = TRUE)
@@ -328,6 +346,20 @@ DimPlot(pDC)
 ggsave("pDC_UMAP_ungrouped.png")
 
 Idents(pDC) <- "subject"
+
+#Visualize the pDC dataset
+metadata <- pDC@meta.data
+#Create a bar plot of the cells per sex
+metadata %>%
+  ggplot(aes(x = sex, fill = sex)) +
+  geom_bar() +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 12, face = "bold"),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14)
+  ) +
+  ggtitle("pDC Cells per sex")
+
 cluster.average <- AverageExpression(pDC,group.by="subject",return.seurat = TRUE)
 # extract the numbers from the current idents
 new_idents <- as.character(gsub("[^0-9]", "", names(Idents(cluster.average))))
@@ -354,11 +386,10 @@ sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["s
 treatment_values <-subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "treatment"]
 # Initialize the "sex" column in the cluster.average object with NAs
 cluster.average@meta.data$sex <- rep(NA, nrow(cluster.average@meta.data))
-cluster.average@meta.data$treatment <- rep(NA, nrow(cluster.average@meta.data))
+
 # Assign the sex values to matching rows in the "sex" column of cluster.average
 cluster.average@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
-#Assign the treatment values to matching rows in the "treatment" column of cluster.average
-cluster.average@meta.data$treatment[!is.na(matching_rows)] <- treatment_values[!is.na(matching_rows)]
+
 
 
 #Normalize the cluster average
@@ -396,6 +427,7 @@ DoHeatmap(cluster.average,
           disp.min = -1,
           disp.max = 1,
           label = T)
+
 ```
 
 ```{r}
@@ -463,22 +495,27 @@ library(AnnotationDbi)
 library(clusterProfiler)
 library(org.Hs.eg.db)
 library(plotly)
+library(stringr)
+library(tibble)
+library(ggrepel)
 
-#all_markers <- FindAllMarkers(pDC_combined,min.pct = 0.25, logfc.threshold = 0)
-#EnhancedVolcano(all_markers,x='avg_log2FC',y='p_val',lab=rownames(all_markers),title='DE genes found in pDCs using sex and treatment as covariates')
 pDC_combined <- pDC
 sexsubject <- paste(pDC_combined@meta.data$sex,pDC_combined@meta.data$subject,sep = "_")
 sextreatment <- paste(pDC_combined@meta.data$sex,pDC_combined@meta.data$treatment,sep = "_")
 pDC_combined[["sex.treatment"]] <- sextreatment
+
+pDC_combined[['stim']] <- str_split_fixed(pDC_combined@meta.data$treatment, "h", 2)[,2]
+pDC_combined$stim[pDC_combined$stim == ""] <- "UT"
 DimPlot(pDC_combined,group.by = "sex.treatment",label = T,pt.size = 0.5)
 ggsave("Dimplot using combined column of sex andtreatment.png")
+#Add a Disease column to the meta data by splitting the treatment column
 
 Idents(pDC_combined) <- pDC_combined@meta.data$sex.treatment
 #Perform differential expression analysis on this combined column for each time point for each disease
 unt_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_UT", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
 
 #Volcano plot for Untreated Male vs Female
-EnhancedVolcano(unt_diffs,x='avg_log2FC',y='p_val',lab=rownames(unt_diffs),pCutoff = 0.05,FCcutoff = 0.25)
+EnhancedVolcano(unt_diffs,x='avg_log2FC',y='p_val',lab=rownames(unt_diffs),pCutoff = 0.05,FCcutoff = 0.25,title = "Differentially expressed genes between Males and Females in Untreated Samples")
 ggsave("Volcano Plot Male_Female_UT.png")
 #Gene Ontology Untreated
 #Convert to Ensembl IDs
@@ -514,20 +551,30 @@ kegg <- gseKEGG(gene = gene_list, organism = "hsa", nPerm = 10000, minGSSize = 3
 #upsetplot(kegg,y="enrichmentScore",showCategory = 20)
 
 #3H Candida
-CA3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hCA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
+CA3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hCA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(CA3h_male_diffs) <- paste(colnames(CA3h_male_diffs),"Male",sep = "_")
-CA3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hCA", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0.25)
+CA3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hCA", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(CA3h_female_diffs) <- paste(colnames(CA3h_female_diffs),"Female",sep = "_")
 #Combine the two dataframes
 merged_data <- merge(CA3h_male_diffs, CA3h_female_diffs, by="row.names", all=TRUE)
-plot1_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, label = Row.names)) +
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+
+# Create the plot
+plot1_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
   geom_point() +
-  geom_text(hjust = -0.1, vjust = 0.1,size=3) +
-  geom_abline(intercept = 0, slope = 1, color = "red") +
-  theme_bw()
-plot1_3h
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 3h of Candida Treatment") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 ggsave(filename = "CA_3H.png",plot = plot1_3h)
-ggplotly(plot1_3h)
+
+
 #Male_gene_expr
 gene_list_male <-CA3h_male_diffs$avg_log2FC
 names(gene_list_male) <- rownames(CA3h_male_diffs)
@@ -568,16 +615,26 @@ kegg_3hCA_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000,
 #dotplot(kegg,x="enrichmentScore",showCategory = 20)
 #ggsave("Female_KEGG_enrichment_CA3h.png")
 #24H Candida
-CA24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hCA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
+CA24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hCA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(CA24h_male_diffs) <- paste(colnames(CA24h_male_diffs),"Male",sep = "_")
-CA24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hCA",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0.25)
+CA24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hCA",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0)
 colnames(CA24h_female_diffs) <- paste(colnames(CA24h_female_diffs),"Female",sep = "_")
 merged_data <- merge(CA24h_male_diffs, CA24h_female_diffs, by="row.names", all=TRUE)
-plot1_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, label = Row.names)) +
+
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+
+plot1_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
   geom_point() +
-  geom_text(hjust = -0.1, vjust = 0.1,size = 3) +
-  geom_abline(intercept = 0, slope = 1, color = "red") +
-  theme_bw()
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 24h of Candida Treatment") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 plot1_24h
 ggsave(filename = "CA_24H.png",plot = plot1_24h)
 ggplotly(plot1_24h)
@@ -616,21 +673,31 @@ gene_list_female <-sort(gene_list_female,decreasing = T)
 kegg_24hCA_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
 #dotplot(kegg,x="enrichmentScore",showCategory = 30)
 #ggsave("Female_KEGG_enrichment_CA24h.png")
+
 #3h Pseudomonas
-PA3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hPA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
+PA3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hPA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(PA3h_male_diffs) <- paste(colnames(PA3h_male_diffs),"Male",sep = "_")
-PA3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hPA", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0.25)
+PA3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hPA", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(PA3h_female_diffs) <- paste(colnames(PA3h_female_diffs),"Female",sep = "_")
 #Combine the two dataframes
 merged_data <- merge(PA3h_male_diffs, PA3h_female_diffs, by="row.names", all=TRUE)
-plot2_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, label = Row.names)) +
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+
+# Create the plot
+plot2_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
   geom_point() +
-  geom_text(hjust = -0.1, vjust = 0.1) +
-  geom_abline(intercept = 0, slope = 1, color = "red") +
-  theme_bw()
-plot2_3h
-ggsave(filename = "PA_3H.png",plot = plot2_3h)
-ggplotly(plot2_3h)
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 3h of PA Treatment") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
+ggsave("3hPA_DEG.png", plot2_3h, width = 10, height = 10, units = "cm")
+plotly(plot2_3h)
 #Male_gene_expr
 gene_list_male <-PA3h_male_diffs$avg_log2FC
 names(gene_list_male) <- rownames(PA3h_male_diffs)
@@ -668,16 +735,26 @@ kegg_3hPA_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000,
 #ggsave("Female_KEGG_enrichment_PA3h.png")
 
 #24h Pseudomonas
-PA24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hPA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
+PA24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hPA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(PA24h_male_diffs) <- paste(colnames(PA24h_male_diffs),"Male",sep = "_")
-PA24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hPA",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0.25)
+PA24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hPA",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0)
 colnames(PA24h_female_diffs) <- paste(colnames(PA24h_female_diffs),"Female",sep = "_")
 merged_data <- merge(PA24h_male_diffs, PA24h_female_diffs, by="row.names", all=TRUE)
-plot2_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, label = Row.names)) +
+
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+
+plot2_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
   geom_point() +
-  geom_text(hjust = -0.1, vjust = 0.1) +
-  geom_abline(intercept = 0, slope = 1, color = "red") +
-  theme_bw()
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 24h of Pseudomonas Treatment") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 plot2_24h
 ggsave(filename = "PA_24H.png",plot = plot2_24h)
 ggplotly(plot2_24h)
@@ -718,17 +795,25 @@ kegg_24hPA_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000
 #dotplot(kegg,x="enrichmentScore",showCategory = 30)
 #ggsave("Female_KEGG_enrichment_PA24h.png")
 #3H M.Tuberculosis
-MTB3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hMTB", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
+MTB3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hMTB", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(MTB3h_male_diffs) <- paste(colnames(MTB3h_male_diffs),"Male",sep = "_")
-MTB3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hMTB", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0.25)
+MTB3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hMTB", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(MTB3h_female_diffs) <- paste(colnames(MTB3h_female_diffs),"Female",sep = "_")
 #Combine the two dataframes
 merged_data <- merge(MTB3h_male_diffs, MTB3h_female_diffs, by="row.names", all=TRUE)
-plot3_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, label = Row.names)) +
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+plot3_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
   geom_point() +
-  geom_text(hjust = -0.1, vjust = 0.1) +
-  geom_abline(intercept = 0, slope = 1, color = "red") +
-  theme_bw()
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 3h of Mycobacterium Tuberculosis") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 plot3_3h
 ggsave(filename = "MTB_3H.png",plot = plot3_3h)
 ggplotly(plot3_3h)
@@ -768,16 +853,24 @@ kegg_3hMTB_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000
 #dotplot(kegg,x="enrichmentScore",showCategory = 20)
 #ggsave("Female_KEGG_enrichment_MTB3h.png")
 #24H M.Tuberculosis
-MTB24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hMTB", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0.25)
+MTB24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hMTB", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
 colnames(MTB24h_male_diffs) <- paste(colnames(MTB24h_male_diffs),"Male",sep = "_")
-MTB24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hMTB",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0.25)
+MTB24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hMTB",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0)
 colnames(MTB24h_female_diffs) <- paste(colnames(MTB24h_female_diffs),"Female",sep = "_")
 merged_data <- merge(MTB24h_male_diffs, MTB24h_female_diffs, by="row.names", all=TRUE)
-plot3_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, label = Row.names)) +
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+plot3_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
   geom_point() +
-  geom_text(hjust = -0.1, vjust = 0.1) +
-  geom_abline(intercept = 0, slope = 1, color = "red") +
-  theme_bw()
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 24h of Mycobacterium Tuberculosis") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 plot3_24h
 ggsave(filename = "MTB_24H.png",plot = plot3_24h)
 ggplotly(plot3_24h)
@@ -819,6 +912,7 @@ kegg_24hMTB_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 1000
 #ggsave("Female_KEGG_enrichment_MTB24h.png")
 ```
 ```{r}
+# Must RUN CODE IN VISUALIZING THE METABOLIC PATHWAYS AFFECTED .R FILE before this block
 #Comparing the gene expression differences at each time point
 Idents(pDC_CA) <- pDC_CA@meta.data$sex
 CA_3h <- FindMarkers(pDC_CA,ident.1="Male",ident.2="Female",min.pct = 0.25,logfc.threshold = 0)
@@ -844,6 +938,7 @@ Common_enriched_sig <- Common_enriched[gsea_3hCA$p.adjust[gsea_3hCA$Description 
 #Now compare with 24h
 Idents(pDC_combined_CA24h) <-pDC_combined_CA24h@meta.data$sex
 CA_24h <- FindMarkers(pDC_combined_CA24h,ident.1 = 'Male',ident.2 = 'Female',min.pct = 0.25,logfc.threshold = 0)
+EnhancedVolcano(CA_24h,lab = rownames(CA_24h),x = 'avg_log2FC',y = 'pct.1',title = '3h CA Males vs Females',pCutoff = 0.5,FCcutoff = 0.25)
 gene_list <- CA_24h$avg_log2FC
 names(gene_list) <- rownames(CA_24h)
 gene_list <- sort(gene_list,decreasing = TRUE)
@@ -856,6 +951,7 @@ gsea_24hCA  <- gseGO(geneList=gene_list,
              verbose = TRUE,
              OrgDb = org.Hs.eg.db,
              pAdjustMethod = "none")
+
 dotplot(gsea_24hCA,x='enrichmentScore',showCategory=30)
 
 Common_enriched <- intersect(gsea_3hCA$Description, gsea_24hCA$Description)
@@ -927,6 +1023,7 @@ Common_enriched_all_PA <- Reduce(intersect, list(ego_UT$Description,ego_3hPA_M$D
 #Comparing for MTB
 Idents(pDC_combined_MTB3h) <- pDC_combined_MTB3h@meta.data$sex
 MTB_3h <-FindMarkers(pDC_combined_MTB3h,ident.1 = "Male",ident.2 = "Female",min.pct = 0.25,logfc.threshold = 0)
+EnhancedVolcano(MTB_3h,lab = rownames(MTB_3h),x = 'avg_log2FC',y = 'pct.1',title = '3h CA Males vs Females',pCutoff = 0.5,FCcutoff = 0.25)
 gene_list <- MTB_3h$avg_log2FC
 names(gene_list) <- rownames(MTB_3h)
 gene_list <- sort(gene_list,decreasing = TRUE)
@@ -947,6 +1044,7 @@ Common_enriched_sig <- Common_enriched[gsea_3hMTB$p.adjust[gsea_3hMTB$Descriptio
                                       abs(gsea_3hMTB$enrichmentScore[gsea_3hMTB$Description %in% Common_enriched]) > enrichment_score_threshold]
 Idents(pDC_combined_MTB24h) <- pDC_combined_MTB24h@meta.data$sex
 gsea_24MTB <- FindMarkers(pDC_combined_MTB24h,ident.1 = "Male",ident.2 = "Female",min.pct = 0.25,logfc.threshold = 0)
+EnhancedVolcano(gsea_24MTB,lab = rownames(gsea_24MTB),x = 'avg_log2FC',y = 'pct.1',title = '3h CA Males vs Females',pCutoff = 0.5,FCcutoff = 0.25)
 gene_list <- gsea_24MTB$avg_log2FC
 names(gene_list) <- rownames(gsea_24MTB)
 gene_list <- sort(gene_list,decreasing = TRUE)

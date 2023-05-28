@@ -1,3 +1,4 @@
+library(e1071)
 #Load the dataset
 gene_names <- c("EIF1AY", "RPS4Y1")
 X <- t(cluster.average@assays$RNA@data[gene_names, ])
@@ -24,4 +25,4 @@ pred_y_class <- ifelse(pred_y > 0.5, 1, 0)
 accuracy <- mean(pred_y_class == test_y)
 
 #Save the model
-saveRDS(model, file = "svm_model.rds")
+#saveRDS(model, file = "svm_model.rds")
