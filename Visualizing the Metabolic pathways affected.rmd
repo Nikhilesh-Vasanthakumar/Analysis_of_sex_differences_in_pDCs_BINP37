@@ -6,48 +6,9 @@ output: html_document
 ```{r}
 library(paletteer)
 library(RColorBrewer)
-#Subset the cluster.average to select only the UT individuals
-UT <- subset(pDC,subset = treatment == 'UT')
-cluster.average_UT <-AverageExpression(UT,group.by = 'subject',return.seurat = T)
-#Normalize the data
-cluster.average_UT <- NormalizeData(cluster.average_UT)
-#Scale the data
-cluster.average_UT <- ScaleData(cluster.average_UT)
-#Find Variable Genes
-cluster.average_UT <- FindVariableFeatures(cluster.average_UT)
-#Perform a PCA
-cluster.average_UT <- RunPCA(cluster.average_UT,dims=1:20)
-#Find Neighbors
-cluster.average_UT <- FindNeighbors(cluster.average_UT)
-#Find Clusters
-cluster.average_UT <- FindClusters(cluster.average_UT,resolution = 0.5)
 
-#Run UMAP
-cluster.average_UT <- RunUMAP(cluster.average_UT, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
 
-subject_sex_lookup <- pDC@meta.data[, c("subject", "sex")]
-# Remove rows with NAs
-subject_sex_lookup <- na.omit(subject_sex_lookup)
-# Remove duplicates
-subject_sex_lookup <- unique(subject_sex_lookup)
-# Order by subject
-subject_sex_lookup <- subject_sex_lookup[order(subject_sex_lookup$subject),]
-#Add subject column to cluster.average_UT
-cluster.average_UT@meta.data$subject <-names(Idents(cluster.average_UT))
-# Match the subject values between the two datasets
-matching_subjects <- intersect(cluster.average_UT@meta.data$subject, subject_sex_lookup$subject)
-
-# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
-# Find the indices of matching rows in the cluster.average object
-matching_rows <- match(matching_subjects, cluster.average_UT@meta.data$subject)
-# Extract the corresponding sex values from the subject_sex_lookup table
-sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
-# Initialize the "sex" column in the cluster.average object with NAs
-cluster.average_UT@meta.data$sex <- rep(NA, nrow(cluster.average_UT@meta.data))
-
-# Assign the sex values to matching rows in the "sex" column of cluster.average
-cluster.average_UT@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
-
+#Analysing the metabolic pathways between sexe at baseline
 my_palette <- paletteer::paletteer_c("grDevices::Blue-Red", n = 20, direction = -1)
 
 #GO-nitric oxide metabolic process(Gene list from the core_enrichment genes)
@@ -113,47 +74,7 @@ position the caret at any line or the code chunk, then click "+".
 
 The code chunk appears:
 ```{r}
-#CA
-# Subset pDC_CA
-pDC_CA <-subset(pDC_combined,subset= treatment == '3hCA')
-cluster.average_3hCA <-AverageExpression(pDC_CA,group.by = 'subject' ,return.seurat= T)
-#Normalize the data
-cluster.average_3hCA <- NormalizeData(cluster.average_3hCA)
-#Scale the data
-cluster.average_3hCA <- ScaleData(cluster.average_3hCA)
-#Find variable genes
-cluster.average_3hCA <- FindVariableFeatures(cluster.average_3hCA)
-#Run PCA
-cluster.average_3hCA <- RunPCA(cluster.average_3hCA,dims=1:20)
-#Find Neighbors
-cluster.average_3hCA <- FindNeighbors(cluster.average_3hCA)
-#Find Clusters
-cluster.average_3hCA <- FindClusters(cluster.average_3hCA, resolution = 0.5)
-#Run UMAP
-cluster.average_3hCA <- RunUMAP(cluster.average_3hCA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
-#Add the sex and subject information.
-subject_sex_lookup <- pDC@meta.data[, c("subject", "sex")]
-# Remove rows with NAs
-subject_sex_lookup <- na.omit(subject_sex_lookup)
-# Remove duplicates
-subject_sex_lookup <- unique(subject_sex_lookup)
-# Order by subject
-subject_sex_lookup <- subject_sex_lookup[order(subject_sex_lookup$subject),]
-#Add subject column to cluster.average_3hCA
-cluster.average_3hCA@meta.data$subject <-names(Idents(cluster.average_3hCA))
-# Match the subject values between the two datasets
-matching_subjects <- intersect(cluster.average_3hCA@meta.data$subject, subject_sex_lookup$subject)
-
-# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
-# Find the indices of matching rows in the cluster.average object
-matching_rows <- match(matching_subjects, cluster.average_3hCA@meta.data$subject)
-# Extract the corresponding sex values from the subject_sex_lookup table
-sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
-# Initialize the "sex" column in the cluster.average object with NAs
-cluster.average_3hCA@meta.data$sex <- rep(NA, nrow(cluster.average_3hCA@meta.data))
-
-# Assign the sex values to matching rows in the "sex" column of cluster.average
-cluster.average_3hCA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+#Pathways enriched at 3h CA when compared with UT
 
 # Male
 #Regulation of Viral genome replication-GO
@@ -227,40 +148,7 @@ DoHeatmap(cluster.average_3hCA,features = c("FCER1G", "MAP2K3" ,"RAC2"),group.by
 
 Type any R code in the chunk, for example:
 ```{r}
-#CA24h
-#Subset from pDC_combined
-pDC_combined_CA24h <- subset(pDC_combined, subset = treatment=='24hCA')
-#Write the same code as the previous block
-cluster.average_24hCA <- AverageExpression(pDC_combined_CA24h,group.by = 'subject',return.seurat = T)
-#Normalize the data
-cluster.average_24hCA <- NormalizeData(cluster.average_24hCA)
-#Find variable genes
-cluster.average_24hCA <- FindVariableFeatures(cluster.average_24hCA,selection.method = 'vst',nfeatures = 2000)
-#Find PCA
-cluster.average_24hCA <- RunPCA(cluster.average_24hCA)
-#Find Neighbors
-cluster.average_24hCA <- FindNeighbors(cluster.average_24hCA, dims = 1:20)
-#Find clusters
-cluster.average_24hCA <- FindNeighbors(cluster.average_24hCA, dims = 1:20)
-#Run UMAP
-cluster.average_24hCA <- cluster.average_3hCA <- RunUMAP(cluster.average_3hCA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
-
-#Add the sex information and subject information.
-#Add subject column to cluster.average_24hCA
-cluster.average_24hCA@meta.data$subject <-names(Idents(cluster.average_24hCA))
-# Match the subject values between the two datasets
-matching_subjects <- intersect(cluster.average_24hCA@meta.data$subject, subject_sex_lookup$subject)
-
-# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
-# Find the indices of matching rows in the cluster.average object
-matching_rows <- match(matching_subjects, cluster.average_24hCA@meta.data$subject)
-# Extract the corresponding sex values from the subject_sex_lookup table
-sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
-# Initialize the "sex" column in the cluster.average object with NAs
-cluster.average_24hCA@meta.data$sex <- rep(NA, nrow(cluster.average_24hCA@meta.data))
-
-# Assign the sex values to matching rows in the "sex" column of cluster.average
-cluster.average_24hCA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+#Pathways enriched at 24h CA when compared with UT
 #MALE-GO
 #Farensyl diphosphate metabolic process - GO
 DoHeatmap(cluster.average_24hCA,features=c("FDPS","HMGCS1","FDFT1"),group.by = 'sex',disp.min = -2,disp.max = 2) + scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
@@ -302,38 +190,7 @@ DoHeatmap(cluster.average_24hCA,features=c("ACAT2", "ALDH2", "HMGCS1" ,"IL4I1"),
 ```
 
 ```{r}
-#Subset the 3hPA data from pDC
-pDC_combined_PA3h <- subset(pDC_combined, subset = treatment=='3hPA')
-cluster.average_3hPA <- AverageExpression(pDC_combined_PA3h, group.by = 'subject',return.seurat = TRUE)
-#Normalize the data
-cluster.average_3hPA <- NormalizeData(cluster.average_3hPA)
-#Find variable genes
-cluster.average_3hPA <- FindVariableFeatures(cluster.average_3hPA, selection.method = "vst", nfeatures = 2000)
-#Find PCA
-cluster.average_3hPA <- RunPCA(cluster.average_3hPA,features =rownames(cluster.average_3hPA))
-#Find Neighbors
-cluster.average_3hPA <- FindNeighbors(cluster.average_3hPA, dims = 1:20)
-#Find Clust
-cluster.average_3hPA <- FindClusters(cluster.average_3hPA, resolution = 0.5)
-#Find UMAP
-cluster.average_3hPA <- RunUMAP(cluster.average_3hPA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
-#Add subject column to cluster.average_3hhPA
-cluster.average_3hPA@meta.data$subject <-names(Idents(cluster.average_3hPA))
-# Match the subject values between the two datasets
-matching_subjects <- intersect(cluster.average_3hPA@meta.data$subject, subject_sex_lookup$subject)
-
-# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
-# Find the indices of matching rows in the cluster.average object
-matching_rows <- match(matching_subjects, cluster.average_3hPA@meta.data$subject)
-# Extract the corresponding sex values from the subject_sex_lookup table
-sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
-# Initialize the "sex" column in the cluster.average object with NAs
-cluster.average_3hPA@meta.data$sex <- rep(NA, nrow(cluster.average_3hPA@meta.data))
-
-# Assign the sex values to matching rows in the "sex" column of cluster.average
-cluster.average_3hPA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
-
-
+#Pathways enriched at 3h for Pseudomonas when compared with UT
 #regulation of lymphocyte chemotaxis
 DoHeatmap(cluster.average_3hPA,features = c("CXCL10","CCL2","CCL4","CCL3"),group.by = 'sex',disp.min = -1,disp.max = 1) + scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
                        oob = scales::oob_squish_any,
@@ -379,36 +236,8 @@ DoHeatmap(cluster.average_3hPA,features = c("CCL2", "CCL3", "CCL4", "CCR7", "CXC
 
 ```
 ```{r}
-#PA 24h
-pDC_combined_PA24h <- subset(pDC_combined, subset = treatment=='24hPA')
-cluster.average_24hPA <- AverageExpression(pDC_combined_PA3h, group.by = 'subject',return.seurat = TRUE)
-#Normalize the data
-cluster.average_24hPA <- NormalizeData(cluster.average_24hPA)
-#Find variable genes
-cluster.average_24hPA <- FindVariableFeatures(cluster.average_24hPA, selection.method = "vst", nfeatures = 2000)
-#Find PCA
-cluster.average_24hPA <- RunPCA(cluster.average_24hPA,features =rownames(cluster.average_24hPA))
-#Find Neighbors
-cluster.average_24hPA <- FindNeighbors(cluster.average_24hPA, dims = 1:20)
-#Find Clust
-cluster.average_24hPA <- FindClusters(cluster.average_24hPA, resolution = 0.5)
-#Find UMAP
-cluster.average_24hPA <- RunUMAP(cluster.average_24hPA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
-#Add subject column to cluster.average_3hhPA
-cluster.average_24hPA@meta.data$subject <-names(Idents(cluster.average_24hPA))
-# Match the subject values between the two datasets
-matching_subjects <- intersect(cluster.average_24hPA@meta.data$subject, subject_sex_lookup$subject)
+#Pathways enriched at 24h for Pseudomonas aeruginosa compared with UT
 
-# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
-# Find the indices of matching rows in the cluster.average object
-matching_rows <- match(matching_subjects, cluster.average_24hPA@meta.data$subject)
-# Extract the corresponding sex values from the subject_sex_lookup table
-sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
-# Initialize the "sex" column in the cluster.average object with NAs
-cluster.average_24hPA@meta.data$sex <- rep(NA, nrow(cluster.average_24hPA@meta.data))
-
-# Assign the sex values to matching rows in the "sex" column of cluster.average
-cluster.average_24hPA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
 
 #GO
 #MHC class II protein complex-GO
@@ -425,72 +254,8 @@ DoHeatmap(cluster.average_24hPA,features=c("RPS29", "FAU", "MGST2", "EIF4B", "RP
                        limits = c(-2, 2))
 
 ```
-```{r}
-#MTB 3h
-pDC_combined_MTB3h <- subset(pDC_combined, subset = treatment=='3hMTB')
-cluster.average_3hMTB <- AverageExpression(pDC_combined_MTB3h, group.by = 'subject',return.seurat = TRUE)
-#Normalize the data
-cluster.average_3hMTB <- NormalizeData(cluster.average_3hMTB)
-#Find variable genes
-cluster.average_3hMTB <- FindVariableFeatures(cluster.average_3hMTB, selection.method = "vst", nfeatures = 2000)
-#Find PCA
-cluster.average_3hMTB <- RunPCA(cluster.average_3hMTB,features =rownames(cluster.average_3hMTB))
-#Find Neighbors
-cluster.average_3hMTB <- FindNeighbors(cluster.average_3hMTB, dims = 1:20)
-#Find Clust
-cluster.average_3hMTB <- FindClusters(cluster.average_3hMTB, resolution = 0.5)
-#Find UMAP
-cluster.average_3hMTB <- RunUMAP(cluster.average_3hMTB, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
 
-#Add subject column to cluster.average_3hhPA
-cluster.average_3hMTB@meta.data$subject <-names(Idents(cluster.average_3hMTB))
-# Match the subject values between the two datasets
-matching_subjects <- intersect(cluster.average_3hMTB@meta.data$subject, subject_sex_lookup$subject)
 
-# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
-# Find the indices of matching rows in the cluster.average object
-matching_rows <- match(matching_subjects, cluster.average_3hMTB@meta.data$subject)
-# Extract the corresponding sex values from the subject_sex_lookup table
-sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
-# Initialize the "sex" column in the cluster.average object with NAs
-cluster.average_3hMTB@meta.data$sex <- rep(NA, nrow(cluster.average_3hMTB@meta.data))
-
-# Assign the sex values to matching rows in the "sex" column of cluster.average
-cluster.average_3hMTB@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
-```
-```{r}
-#24h MTB
-
-pDC_combined_MTB24h <- subset(pDC_combined, subset = treatment=='24hMTB')
-
-cluster.average_24hMTB <- AverageExpression(pDC_combined_MTB3h, group.by = 'subject',return.seurat = TRUE)
-#Normalize the data
-cluster.average_24hMTB <- NormalizeData(cluster.average_24hMTB)
-#Find variable genes
-cluster.average_24hMTB <- FindVariableFeatures(cluster.average_24hMTB, selection.method = "vst", nfeatures = 2000)
-#Find PCA
-cluster.average_24hMTB <- RunPCA(cluster.average_24hMTB,features =rownames(cluster.average_24hMTB))
-#Find Neighbors
-cluster.average_24hMTB <- FindNeighbors(cluster.average_24hMTB, dims = 1:20)
-#Find Clust
-cluster.average_24hMTB <- FindClusters(cluster.average_24hMTB, resolution = 0.5)
-#Find UMAP
-cluster.average_24hMTB <- RunUMAP(cluster.average_24hMTB, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
-
-#Add subject column to cluster.average_3hhPA
-cluster.average_24hMTB@meta.data$subject <-names(Idents(cluster.average_24hMTB))
-# Match the subject values between the two datasets
-matching_subjects <- intersect(cluster.average_24hMTB@meta.data$subject, subject_sex_lookup$subject)
-
-matching_rows <- match(matching_subjects, cluster.average_24hMTB@meta.data$subject)
-# Extract the corresponding sex values from the subject_sex_lookup table
-sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
-# Initialize the "sex" column in the cluster.average object with NAs
-cluster.average_24hMTB@meta.data$sex <- rep(NA, nrow(cluster.average_24hMTB@meta.data))
-
-# Assign the sex values to matching rows in the "sex" column of cluster.average
-cluster.average_24hMTB@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
-```
 ```{r}
 library(gridExtra)
 #Import Functions file
@@ -1394,6 +1159,8 @@ library(tidyr)
 #Subset according to stim
 pDC_PA_stim <- subset(pDC_combined, stim == "PA" | stim == "UT")
 
+#SIGNATURE SCORE ANALYSIS
+#Analysing the Gene sets for Common Pseudomonas enriched pathways and plotting the signature Scores
 #Response to Bacterium
 genes_UT <-format_gene_list("TNFAIP3/GPX1/GNLY/NR4A1/TSPO/PYCARD/C15orf48/ST13/CD36/IL1B/CCL5/S100A8/SOD2/FOS/S100A9/PPBP/LYZ")
 
