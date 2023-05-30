@@ -68,6 +68,7 @@ blood_healthy<- readRDS("blood_healthy.rds")
 
 Sorting the barcodes file to make sure they are in order and mapping them with the seurat object
 ```{r}
+library(RColorBrewer)
 cell_types_ordered <- cell_types[match(colnames(blood_healthy), cell_types$barcode), ]
 #Setting the Identity of the cells based on the barcode mapping
 Idents(blood_healthy) <- cell_types_ordered$cell_type
@@ -82,7 +83,7 @@ blood_healthy[["subject"]] <- treatment_ordered$assignment
 blood_healthy[["percent.mt"]] <- PercentageFeatureSet(blood_healthy, pattern = "^MT-")
 
 #Visualization of the blood healthy dataset Uncomment if needed
-
+blood_healthy@meta.data$sex <- pDC@meta.data$sex[match(blood_healthy@meta.data$subject, pDC@meta.data$subject)]
 # Visualize the number of cell counts per cell_type via barplot
 metadata <- blood_healthy@meta.data
 metadata %>%
@@ -109,6 +110,45 @@ metadata %>%
   	scale_x_log10() +
   	geom_vline(xintercept = c(5), linetype = "dashed", color = "red")
 
+#Create a stacked bar plot of the cells per subject coloured by cell type
+# Create a stacked bar plot using ggplot2
+library(viridis)
+mono <- c("mono 1", "mono 2","mono 4")
+tcells <- c("memory CD4T", "naive CD4T", "memory CD8T", "naive CD8T","th1 CD4T","th2 CD4T","reg CD4T" )
+nkcells <-c("NK","NKbright","NKdim")
+
+metadata$cell_type1 <- ifelse(metadata$cell_type %in% mono, "Monocytes",
+						ifelse(metadata$cell_type %in% tcells, "T cells",
+						ifelse(metadata$cell_type %in% nkcells, "NK cells", metadata$cell_type)))
+stacked <- as.data.frame(table(metadata$subject, metadata$cell_type1))
+colnames(stacked) <- c("subject", "cell_type1", "count")
+
+# Define custom color palette
+my_colors <- brewer.pal(10, "Set3")
+
+ggplot(stacked, aes(x = subject, y = count, fill = cell_type1)) +
+  geom_col(position = "fill") +
+  scale_fill_manual(values = my_colors) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  ) +
+  ggtitle("Cell Count per Subject")
+
+#Add sex using pDC data
+
+UT_bloodhealthy <- subset(blood_healthy,subset=treatment == "UT")
+metadata <- UT_bloodhealthy@meta.data
+metadata %>%
+  group_by(sex, subject, cell_type) %>%
+  summarise(count = n()) %>%
+  mutate(pct = count / sum(count)) %>%
+		filter(cell_type == "pDC") %>%
+  ggplot(aes(x = sex, y = pct, fill = sex)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2,aes(colour = sex)) +
+  ylab("Proportion of pDCs over all cell types for UT")
 #Idents(blood_healthy) <- "RNA"
 #plot_qc <- VlnPlot(blood_healthy, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3,pt.size = 0)
 #saveRDS(plot_qc,file="plot_qc.rds")
@@ -322,6 +362,13 @@ metadata %>%
   ggtitle("pDC Cells per sex")
 ggsave("Cells_per_sex.png")
 
+#Create a boxplot comparing the distribution of pDC cells per sex
+metadata %>%
+		group_by(subject,sex) %>%
+		count(cell_type) %>%
+		mutate(pct =n/sum(n)) %>%
+
+
 # Calculate the average expression per subject in the pDC dataset
 cluster.average <- AverageExpression(pDC, group.by = "subject", return.seurat = TRUE)
 
@@ -417,7 +464,7 @@ saveRDS(cluster.average, file = "cluster.average_pDC_bloodhealthy.rds")
 #VlnPlot for Interferon genes
 #According to https://pubmed.ncbi.nlm.nih.gov/25839220/ IFNAR1, IFNAR2, LY6E, MX1, OAS3, IFI44L, IFI6, IFITM3 are upregulated which are all INF related genes.
 #VlnPlot(pDC,features = c("IFNAR1","IFNAR2","LY6E","MX1","OAS3","IFI44L","IFI6","IFITM3"),group.by = "treatment")
-ggsave("pDC_treat_IFN_genes_Upreg_Vln.png")
+#ggsave("pDC_treat_IFN_genes_Upreg_Vln.png")
 #And these are the downregulated genes
 #MGAM,ZNF331,PTGS2,MME,IL1R2,IL8,CXCL1,GOS2,NR4A2,NR4A3
 #VlnPlot(pDC,features = c("MGAM","ZNF331","PTGS2","MME","IL1R2","IL8","CXCL1","GOS2","NR4A2","NR4A3"),group.by = "treatment")
@@ -457,7 +504,6 @@ library(EnhancedVolcano)
 library(AnnotationDbi)
 library(clusterProfiler)
 library(org.Hs.eg.db)
-library(plotly)
 library(stringr)
 library(tibble)
 library(ggrepel)
@@ -600,7 +646,6 @@ plot1_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 plot1_24h
 ggsave(filename = "CA_24H.png",plot = plot1_24h)
-ggplotly(plot1_24h)
 #Male_gene_expr
 gene_list_male <-CA24h_male_diffs$avg_log2FC
 names(gene_list_male) <- rownames(CA24h_male_diffs)
@@ -660,7 +705,6 @@ plot2_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   theme(text = element_text(size = 8)) +
   scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 ggsave("3hPA_DEG.png", plot2_3h, width = 10, height = 10, units = "cm")
-plotly(plot2_3h)
 #Male_gene_expr
 gene_list_male <-PA3h_male_diffs$avg_log2FC
 names(gene_list_male) <- rownames(PA3h_male_diffs)
@@ -672,12 +716,12 @@ gene_list_female <- sort(gene_list_female,decreasing = T)
 #Perform GO enrichment analysis for male
 ego_3hPA_M <- gseGO(gene = gene_list_male , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
 #Plot dotplot
-#dotplot(ego,x='enrichmentScore',showCategory=30)
-#ggsave("Male_GO_enrichment_PA3h.png")
+dotplot(ego_3hPA_M,x='enrichmentScore',showCategory=20)
+ggsave("Male_GO_enrichment_PA3h.png")
 #Perform GO enrichment analysis for female
 ego_3hPA_F <- gseGO(gene = gene_list_female , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
-#dotplot(ego,x='enrichmentScore',showCategory=30)
-#ggsave("Female_GO_enrichment_PA3h.png")
+dotplot(ego_3hPA_F,x='enrichmentScore',showCategory=20)
+ggsave("Female_GO_enrichment_PA3h.png")
 #Convert to Entez IDs Male
 Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(PA3h_male_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
 gene_list_male <-PA3h_male_diffs$avg_log2FC
@@ -720,7 +764,6 @@ plot2_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 plot2_24h
 ggsave(filename = "PA_24H.png",plot = plot2_24h)
-ggplotly(plot2_24h)
 
 #Male_gene_expr
 gene_list_male <-PA24h_male_diffs$avg_log2FC
@@ -779,7 +822,6 @@ plot3_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 plot3_3h
 ggsave(filename = "MTB_3H.png",plot = plot3_3h)
-ggplotly(plot3_3h)
 #Male_gene_expr
 gene_list_male <-MTB3h_male_diffs$avg_log2FC
 names(gene_list_male) <- rownames(MTB3h_male_diffs)
@@ -836,7 +878,6 @@ plot3_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, 
   scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
 plot3_24h
 ggsave(filename = "MTB_24H.png",plot = plot3_24h)
-ggplotly(plot3_24h)
 
 #Male_gene_expr
 gene_list_male <-MTB24h_male_diffs$avg_log2FC
@@ -1207,7 +1248,8 @@ gsea_3hPA  <- gseGO(geneList=gene_list,
              verbose = TRUE,
              OrgDb = org.Hs.eg.db,
              pAdjustMethod = "none")
-dotplot(gsea_3hPA,x='enrichmentScore',showCategory=30)
+dotplot(gsea_3hPA,x='enrichmentScore',showCategory=20)
+ggsave("gsea_3hPA.png")
 p_threshold <- 0.01
 enrichment_score_threshold <- 0.5
 #Selecting the common enriched gene sets between the different analyses (3-hour time point):
@@ -1230,7 +1272,8 @@ gsea_24hPA  <- gseGO(geneList=gene_list,
              verbose = TRUE,
              OrgDb = org.Hs.eg.db,
              pAdjustMethod = "none")
-dotplot(gsea_24hPA,x='enrichmentScore',showCategory=30)
+dotplot(gsea_24hPA,x='enrichmentScore',showCategory=20)
+ggsave("gsea_24hPA.png")
 Common_enriched <- intersect(gsea_24hPA$Description, gsea_24hPA$Description)
 #Finding the common enriched gene sets between the different analyses (24-hour time point):
 Common_enriched_sig <- Common_enriched[

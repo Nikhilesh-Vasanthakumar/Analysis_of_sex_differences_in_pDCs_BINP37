@@ -6,25 +6,27 @@ output: html_document
 ```{r}
 library(paletteer)
 library(RColorBrewer)
-
+library(gridExtra)
+library(stringr)
+library(tidyr)
 
 #Analysing the metabolic pathways between sexe at baseline
 my_palette <- paletteer::paletteer_c("grDevices::Blue-Red", n = 20, direction = -1)
 
 #GO-nitric oxide metabolic process(Gene list from the core_enrichment genes)
-DoHeatmap(cluster.average_UT,features=c("TSPO","KLF4","HSP90AA1","CD36","IL1B","AIF1","SOD2"),group.by = 'sex',draw.lines = T,)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
+j <-DoHeatmap(cluster.average_UT,features=c("TSPO","KLF4","HSP90AA1","CD36","IL1B","AIF1","SOD2"),group.by = 'sex',draw.lines = T,)+scale_fill_gradientn(colors = rev(brewer.pal(1000, "RdBu")),
                        oob = scales::oob_squish_any,
                        limits = c(-2, 2))
-
+j<-saveRDS(j, file = "nitric.rds")
 
 #Using all the genes from the pathway
 DoHeatmap(cluster.average_UT,features = c("TLR2", "NOS1", "CYP1B1", "CYB5R3", "DDAH2", "NQO1", "GCH1", "CYB5B", "NOS3", "ARG2", "MTARC1", "TLR4", "TICAM1", "SLC7A6", "KLRK1", "AKT1", "POR", "CPS1", "MTARC2", "RORA", "GCHFR", "ACP5", "SPR", "NOS2", "CAV1"),group.by = 'sex',disp.min = -1,disp.max = 1)
 
 #KEGG Carbon metabolism
-DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1"),group.by = 'sex')+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2))
-
+i <- DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1"),group.by = 'sex')+ scale_fill_gradientn(colors = rev(brewer.pal(10, "RdBu")), oob = scales::oob_squish_any, limits = c(-2, 2))
+saveRDS(i, file = "Carbon.rds")
 #Glycolysis
-DoHeatmap(cluster.average_UT,features = c("GAPDH","ADH5","ADPGK","PGK1","LDHA","ALDH3B1","MINPP1","PGAM1","PFKM","PFKL","ALDH9A1","ALDH2","PKM","GPI","ALDH7A1","PGAM4","FBP1","ALDOA","ENO2","LDHB","ALDH1B1","HK3"),group.by = 'sex',disp.min = -1,disp.max = 1)+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2))
+DoHeatmap(cluster.average_UT,features = c("GAPDH","ADH5","ADPGK","PGK1","LDHA","ALDH3B1","MINPP1","PGAM1","PFKM","PFKL","ALDH9A1","ALDH2","PKM","GPI","ALDH7A1","PGAM4","FBP1","ALDOA","ENO2","LDHB","ALDH1B1","HK3"),group.by = 'sex',disp.min = -1,disp.max = 1)+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-1, 1))
 
 #TCA cycle
 DoHeatmap(cluster.average_UT,features = c("PDHB","MDH2","OGDH","SDHC","FH","DLAT","ACO2","SDHA","IDH3G","ACLY","CS","SUCLG1","DLD","SDHD","IDH3A"),group.by = 'sex',disp.min = -2,disp.max = 2)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"), oob = scales::oob_squish_any,
@@ -40,7 +42,7 @@ DoHeatmap(cluster.average_UT,features = c("CCL3", "STAP1","CTSC","CCL3","MIR142"
                        limits = c(-2, 2))
 
 #IL-6 Production
-a<-DoHeatmap(cluster.average_UT,features =c("ARRB2","TNFAIP3","PYCARD","TYROBP","CD36","IL1B","AIF1"),group.by = 'sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
+a<-DoHeatmap(cluster.average_UT,features =c("ARRB2","TNFAIP3","PYCARD","TYROBP","CD36","IL1B","AIF1"),group.by = 'sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = rev(brewer.pal(1000, "RdBu")),
                        oob = scales::oob_squish_any,
                        limits = c(-2, 2))
 saveRDS(a, file = "IL6.rds")
@@ -52,12 +54,10 @@ DoHeatmap(cluster.average_UT,features=c("RFTN1","SLC7A5","IFNG" ,"LILRB2", "AIF1
 DoHeatmap(cluster.average_UT,features =c("LGMN","CCL5","AIF1"),group.by = 'sex',disp.min = -1,disp.max = 1)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
                        oob = scales::oob_squish_any,
                        limits = c(-2, 2))
-#Carbon Metabolism-KEGG
-DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","SOCS1","PTGDS","CSF2RB","MARCH1" ),group.by = 'sex',disp.min = -2,disp.max = 2)+scale_fill_gradientn(colors = brewer.pal(1000, "RdBu"),
-                       oob = scales::oob_squish_any,
-                       limits = c(-2, 2))
+
 #Biosynthesis of amino acids-KEGG
-DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","CSF2RB","MARCH1"),group.by = 'sex',disp.min = -1,disp.max = 1)+ scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2))
+k <-DoHeatmap(cluster.average_UT,features = c("GRSF1","OCIAD1","RAB21","CSF2RB","MARCH1"),group.by = 'sex',disp.min = -1,disp.max = 1)+ scale_fill_gradientn(colors = rev(brewer.pal(10, "RdBu")), oob = scales::oob_squish_any, limits = c(-2, 2))
+saveRDS(k, file = "Amino.rds")
 
 
 #Cholesterol Metabolism-KEGG
@@ -1159,7 +1159,7 @@ library(tidyr)
 #Subset according to stim
 pDC_PA_stim <- subset(pDC_combined, stim == "PA" | stim == "UT")
 
-#SIGNATURE SCORE ANALYSIS
+#SIGNATURE SCORES
 #Analysing the Gene sets for Common Pseudomonas enriched pathways and plotting the signature Scores
 #Response to Bacterium
 genes_UT <-format_gene_list("TNFAIP3/GPX1/GNLY/NR4A1/TSPO/PYCARD/C15orf48/ST13/CD36/IL1B/CCL5/S100A8/SOD2/FOS/S100A9/PPBP/LYZ")
@@ -1534,7 +1534,7 @@ genes_3h <- format_gene_list("CXCL11/CXCL10/IFIT2/TNF/ISG15/IRF1/MX1/PARP14/CCL2
 
 genes_24h <- format_gene_list("CCL4/IL1B/MT2A/IL2RA/CXCR4/CCL5/CEBPB/TNFRSF1B/IFITM2/TNFRSF18/CXCL2/CORO1A/PLP2/CD58/RIF1/JAK1/FCER1G/TNFRSF4/KYNU/PTPN2/BAD/LIMS1/CD44/TNFAIP3/PTPRC/WAS/PPP2CB/CXCL1/RAD23B/CCL2/ACTR2/NR1H2/CREB1/NRP2/HAX1/HSPA5/IL10RB/XRCC5/P4HB/MAPKAPK2/REL/GAPDH/ADIPOR2/EEF1E1/IL2RG/TYK2/ICAM1/PDIA3")
 
-genes <- unique(c(genes_24h, genes_3h, genes_UT))
+genes_res <- unique(c(genes_24h, genes_3h, genes_UT))
  heatmap_res_cyto__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
       theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
@@ -1622,7 +1622,7 @@ genes_3h <- format_gene_list("CXCL11/CXCL10/TNF/ISG15/IRF1/MX1/PARP14/CCL2/EREG/
 
 genes_24h <- format_gene_list("CCL4/IL1B/IL2RA/CXCR4/CCL5/TNFRSF1B/IFITM2/TNFRSF18/CXCL2/PLP2/JAK1/FCER1G/TNFRSF4/PTPN2/BAD/LIMS1/CD44/TNFAIP3/PTPRC/PPP2CB/CXCL1/CCL2/NR1H2/IL10RB/P4HB/ADIPOR2/IL2RG/TYK2/PADI2/CYLD/TRAF1/IRF1/WNK1/TRADD/SP100")
 
-genes <- unique(c(genes_24h, genes_3h, genes_UT))
+genes_sig <- unique(c(genes_24h, genes_3h, genes_UT))
  heatmap_cyto_sig__UT <- DoHeatmap(cluster.average_UT, features = genes, group.by = 'sex', draw.lines = TRUE) +
      scale_fill_gradientn(colors = brewer.pal(10, "RdBu"), oob = scales::oob_squish_any, limits = c(-2, 2)) + guides(fill = FALSE, color = FALSE) + ggtitle("UT") +
       theme(plot.title = element_text(hjust = 0.5), axis.text.y =element_text(size =10, face = "bold", vjust = 0),plot.margin = unit(c(1, 0, 1, 1), "cm"))
