@@ -1,0 +1,1334 @@
+---
+title: "Blood_healthy -Blood scRNAseq healthy state Oelen 2019"
+output: html_notebook
+---
+
+The data used is collected from 120 Northern Netherlands population cohort Lifeline found from
+https://eqtlgen.org/sc/datasets/1m-scbloodnl-dataset.html
+
+For each Individual, the following data is collected:
+Unstimulated
+3h,24h stimulated with C. albicans
+3h,24h stimulated with M. tuberculosis
+3h,24h stimulated with P. aeruginosa
+
+Two versions of the data are available:
+v2: 907 genes/cell,
+v3: 1861 genes/cell
+The data is available in the following files:
+1M_assignments_conditions_expid.tsv
+1M_cell_types.tsv
+1M_v2_20201029_RNA.mtx
+1M_v2_20201029_RNA_colnames.tsv
+1M_v2_20201029_RNA_rownames.tsv
+
+Loading in the required packages and data
+```{r}
+#Setting working directory
+setwd("E:/Bioinformatics/Semester2/BINP37")
+#Load the required packages
+suppressMessages(library(Seurat))
+suppressMessages(library(dplyr))
+suppressMessages(library(ggplot2))
+suppressMessages(library(patchwork))
+suppressMessages(library(rtracklayer))
+suppressMessages(library(methods))
+suppressMessages(library(Matrix))
+suppressMessages(library(monocle3))
+
+# Load the data
+# Set file paths
+matrix_path <- "1M_v2_20201029_RNA.mtx"
+cells_path <- "1M_v2_20201029_RNA_colnames.txt"
+features_path <- "1M_v2_20201029_RNA_rownames.txt"
+cell_types_path <- "1M_cell_types.tsv"
+assignment_conditions <- "1M_assignments_conditions_expid.tsv"
+#GTF file
+gtf_file <- "Homo_sapiens.GRCh38.109.gtf"
+# Read in counts matrix
+counts <- readMM(matrix_path)
+# Read in cells file and set column names of counts matrix
+cells <- read.table(cells_path, header = FALSE)
+colnames(counts) <- cells$V1
+# Read in features file and set row names of counts matrix
+features <- read.table(features_path, header = FALSE)
+rownames(counts) <- features[,1]
+#Read the annotation file
+cell_types <- read.table(cell_types_path, header = TRUE, sep = "\t")
+treatment <- read.table(assignment_conditions,header =TRUE ,sep ="\t")
+
+```
+
+Creating a Seurat object using the data to start analysing them.
+```{r}
+blood_healthy <- CreateSeuratObject(counts = counts, project = "blood_healthy", min.cells = 3, min.features = 200,Idents =cell_types$cell_type)
+#saveRDS(blood_healthy,file="blood_healthy.rds")
+blood_healthy<- readRDS("blood_healthy.rds")
+```
+
+Sorting the barcodes file to make sure they are in order and mapping them with the seurat object
+```{r}
+library(RColorBrewer)
+cell_types_ordered <- cell_types[match(colnames(blood_healthy), cell_types$barcode), ]
+#Setting the Identity of the cells based on the barcode mapping
+Idents(blood_healthy) <- cell_types_ordered$cell_type
+#Uploading the meta data to the seurat object
+blood_healthy[["barcode"]] <- cell_types_ordered$barcode
+#Add cell type to meta data
+blood_healthy[["cell_type"]] <- cell_types_ordered$cell_type
+#Add treatment to meta data
+treatment_ordered <- treatment[match(colnames(blood_healthy), treatment$barcode), ]
+blood_healthy[["treatment"]] <- treatment_ordered$timepoint
+blood_healthy[["subject"]] <- treatment_ordered$assignment
+blood_healthy[["percent.mt"]] <- PercentageFeatureSet(blood_healthy, pattern = "^MT-")
+
+#Visualization of the blood healthy dataset Uncomment if needed
+blood_healthy@meta.data$sex <- pDC@meta.data$sex[match(blood_healthy@meta.data$subject, pDC@meta.data$subject)]
+# Visualize the number of cell counts per cell_type via barplot
+metadata <- blood_healthy@meta.data
+metadata %>%
+  	ggplot(aes(x=cell_type, fill=cell_type)) +
+  	geom_bar() +
+  	theme_classic() +
+  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  	theme(plot.title = element_text(hjust=0.5, face="bold")) +
+  	ggtitle("Cell Count per cell type")
+
+# Visualize the distribution of genes detected per cell_type via histogram
+metadata %>%
+  	ggplot(aes(color=cell_type, x=nFeature_RNA, fill= cell_type)) +
+  	geom_density(alpha = 0.2) +
+  	theme_classic() +
+  	scale_x_log10() +
+  	geom_vline(xintercept = c(200, 2500), linetype = "dashed", color = "red")
+
+#Visualize the percent mt. genes per subject
+metadata %>%
+  	ggplot(aes(color=cell_type, x=percent.mt, fill= cell_type)) +
+  	geom_density(alpha = 0.2) +
+  	theme_classic() +
+  	scale_x_log10() +
+  	geom_vline(xintercept = c(5), linetype = "dashed", color = "red")
+
+#Create a stacked bar plot of the cells per subject coloured by cell type
+# Create a stacked bar plot using ggplot2
+library(viridis)
+mono <- c("mono 1", "mono 2","mono 4")
+tcells <- c("memory CD4T", "naive CD4T", "memory CD8T", "naive CD8T","th1 CD4T","th2 CD4T","reg CD4T" )
+nkcells <-c("NK","NKbright","NKdim")
+
+metadata$cell_type1 <- ifelse(metadata$cell_type %in% mono, "Monocytes",
+						ifelse(metadata$cell_type %in% tcells, "T cells",
+						ifelse(metadata$cell_type %in% nkcells, "NK cells", metadata$cell_type)))
+stacked <- as.data.frame(table(metadata$subject, metadata$cell_type1))
+colnames(stacked) <- c("subject", "cell_type1", "count")
+
+# Define custom color palette
+my_colors <- brewer.pal(10, "Set3")
+
+ggplot(stacked, aes(x = subject, y = count, fill = cell_type1)) +
+  geom_col(position = "fill") +
+  scale_fill_manual(values = my_colors) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  ) +
+  ggtitle("Cell Count per Subject")
+
+#Add sex using pDC data
+
+UT_bloodhealthy <- subset(blood_healthy,subset=treatment == "UT")
+metadata <- UT_bloodhealthy@meta.data
+metadata %>%
+  group_by(sex, subject, cell_type) %>%
+  summarise(count = n()) %>%
+  mutate(pct = count / sum(count)) %>%
+		filter(cell_type == "pDC") %>%
+  ggplot(aes(x = sex, y = pct, fill = sex)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2,aes(colour = sex)) +
+  ylab("Proportion of pDCs over all cell types for UT")
+#Idents(blood_healthy) <- "RNA"
+#plot_qc <- VlnPlot(blood_healthy, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3,pt.size = 0)
+#saveRDS(plot_qc,file="plot_qc.rds")
+```
+The data is now ready to be analysed.We will start with the QC analysis after which we Normalise the data and find the variable features in the cells.
+```{r}
+#Subset the data with the following QC conditions
+blood_healthy <- subset(blood_healthy, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+#Normalize the data
+blood_healthy <- NormalizeData(blood_healthy, normalization.method = "LogNormalize", scale.factor = 10000)
+#Find variable features
+blood_healthy <- FindVariableFeatures(blood_healthy, selection.method = "vst", nfeatures = 2000)
+```
+We will now visualise the variable features in the cells using the and Variable Feature Plot function.
+```{r}
+#Visualise the variable features in the cells using VariableFeaturePlot
+top10<-head(VariableFeatures(blood_healthy),10)
+plot1 <- VariableFeaturePlot(blood_healthy)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
+#ggsave("VariableFeaturePlot.png",plot2)
+```
+
+
+
+
+We will now perform the PCA analysis to see the clustering of cells based on cell_types.
+```{r}
+#Scale the data
+all.genes <- rownames(blood_healthy)
+blood_healthy <- ScaleData(blood_healthy, features = all.genes)
+#Perform PCA
+blood_healthy <- RunPCA(blood_healthy, features = VariableFeatures(object = blood_healthy))
+```
+We will now visualise the PCA analysis using the PCAPlot function.
+```{r}
+#Visualise the PCA analysis using PCAPlot
+pcaplot <- PCAPlot(blood_healthy, label = TRUE)
+pcaplot
+ElbowPlot(blood_healthy)
+#ggsave("PCAPlot_bycell_type.png",pcaplot)
+#Visualise the PCA analysis using VizDimLoadings
+featuresdefpca <- VizDimLoadings(blood_healthy, dims = 1:4, reduction = "pca")
+featuresdefpca
+#ggsave("Defining_features.png",featuresdefpca)
+Combined_features <- VizDimLoadings(blood_healthy, dims = 1:20, reduction = "pca",combine=TRUE)
+Combined_features
+#ggsave("Combined_features_plot.png",Combined_features)
+```
+Clustering the cells using umap
+```{r}
+plan(strategy = "multisession", workers = 50)
+blood_healthy <- FindNeighbors(blood_healthy, dims = 1:20)
+blood_healthy <- FindClusters(blood_healthy, resolution = 0.5,future.seed = TRUE)
+blood_healthy <- RunUMAP(blood_healthy, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Visualise the clustering using DimPlot
+#DimPlot(blood_healthy, label = TRUE, group.by = "cell_type")
+#ggsave("DimPlot_cell_type.png")
+#DimPlot(blood_healthy, label = TRUE, group.by = "treatment")
+#ggsave("DimPlot_treatment.png")
+#DimPlot(blood_healthy, label = TRUE, group.by = c("treatment", "cell_type"))
+#ggsave("DimPlot_treatment&cell_type.png")
+```
+We will now select the pDC cells and perform the analysis on them.
+```{r}
+#Select the pDC cells
+
+# Subset the original object
+pDC <- subset(blood_healthy, subset = cell_type == "pDC")
+
+#saveRDS(pDC,file="pDC_mod.rds")
+#pDC <-readRDS("pDC_mod.rds")
+#Visualise the pDC cells using DimPlot
+DimPlot(pDC, label = TRUE, group.by = "treatment")
+ggsave("DimPlot_pDC_treatment.png")
+DimPlot(pDC, label = TRUE)
+ggsave("DimPlot_pDC_clustered.png")
+```
+We will now select the X and Y specific genes in the pDC cells to analyse the sex based differential expression.
+```{r}
+#Select the X and Y specific genes in the pDC cells
+gtf <- rtracklayer::import(gtf_file)
+gtf_df <- as.data.frame(gtf)
+
+gene_rows <- gtf_df[gtf_df$seqnames %in% c("X", "Y") & gtf_df$type == "gene", ]
+
+gene_info <- data.frame(gene_name = gene_rows$gene_name, chromosome = gene_rows$seqnames)
+
+x_genes <- gene_info[gene_info$chromosome=="X",]
+y_genes=gene_info[gene_info$chromosome=="Y",]
+
+#Use x_genes and y_genes to filter the pDC object
+gene_names <- rownames(pDC)
+x_genes_present <- intersect(x_genes$gene_name, gene_names)
+y_genes_present <- intersect(y_genes$gene_name, gene_names)
+
+subset = gene_names %in% c(x_genes_present, y_genes_present)
+matching_genes <- gene_names[subset]
+#Selecting only the x amd y genes
+
+pDC_meta <- subset(pDC, features = y_genes_present)
+pDC_meta <- subset(pDC_meta, subset = nFeature_RNA > 0)
+Idents(pDC_meta) <- "subject"
+
+
+#Find genes in y_genes present whose Mean expression is >0
+y_genes_expr <- AverageExpression(pDC_meta, features = y_genes_present,idents = "subject")
+y_genes_mean_expr <- rowMeans(y_genes_expr$RNA)
+#Get a vector of genes names with mean expression >0.5
+y_genes_mean_expr <- y_genes_mean_expr > 1
+#Select only the genes names with True value
+y_genes_present_fil <- y_genes_present[y_genes_mean_expr]
+#Trying out the filter
+qvals <- vector(length = length(y_genes_present_fil))
+for (i in seq_along(y_genes_present_fil)) {
+  qvals[i] <- quantile(pDC_meta@assays$RNA@data[y_genes_present_fil[i], ], probs = 0.95)
+}
+
+Male <-subset(pDC_meta,subset = EIF1AY > qvals[1] | RPS4Y1 >qvals[2])
+
+#Add sex to the meta data
+Male <- AddMetaData(Male, metadata = data.frame(sex = rep("male", nrow(Male@meta.data))))
+Male@meta.data$sex <- "Male"
+pDC[["sex"]]<-NA
+
+#Now mark the subjects as Males in the pDC dataset
+#Logic used If the subject values match in Male@meta.data$subject and pDC@meta.data$subject then add male to the corresponding sex column
+# Find matching subjects in Male dataset
+matching_subjects <- intersect(Male@meta.data$subject, pDC@meta.data$subject)
+
+# Loop through the matching subjects and mark them as males in pDC dataset
+for (subject in matching_subjects) {
+  pDC@meta.data[pDC@meta.data$subject == subject, "sex"] <- "Male"
+}
+#Assigning the NA columns as female
+pDC@meta.data$sex <- ifelse(is.na(pDC@meta.data$sex), "Female", pDC@meta.data$sex)
+#saveRDS(pDC,file="pDC_sex.rds")
+#pDC <- readRDS(file = "pDC_sex.rds")
+#Uncomment for pDC Cells per person barplot
+#DimPlot(pDC)
+#Analyse the pDC clusters
+#cells_per_subject <- table(pDC@meta.data$subject)
+# Create a bar plot
+#barplot(cells_per_subject, main = "Cells per Person", xlab = "Person", ylab = "Number of Cells")
+#ggsave("Cells_per_person_bar.png")
+```
+
+```{r}
+#Now split pDC by sexes
+Male <- subset(pDC,subset= sex == "Male")
+Female <-subset(pDC, subset =sex =="Female")
+
+Male <-NormalizeData(Male)
+Female <-NormalizeData(Female)
+
+#Perform PCA on both the sexes
+Male <- RunPCA(Male, features=VariableFeatures(object = Male))
+Female <- RunPCA(Female,features =VariableFeatures(object = Female))
+DimPlot(Male,reduction = "pca", group.by = "treatment")
+ggsave("Male_pca_treat.png")
+DimPlot(Female,reduction = "pca", group.by = "treatment")
+ggsave("Female_pca_treat.png")
+#Perform UMAP
+plan(strategy = "multisession", workers = 50)
+Male <- FindNeighbors(Male,dims=1:20)
+Male <- FindClusters(Male, resolution = 0.5,future.seed = TRUE)
+#Run UMAP
+Male <- RunUMAP(Male, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Visualize UMAP
+DimPlot(Male,group.by = "treatment",label = TRUE)
+ggsave("Male_treat_UMAP.png")
+#Now visualize for Females
+Female <-FindNeighbors(Female,dims=1:20)
+Female <-FindClusters(Female,resolution = 0.5)
+#Run UMAP
+Female <- RunUMAP(Female, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+DimPlot(Female,group.by = "treatment",label =TRUE)
+ggsave("Female_treat_UMAP.png")
+
+#Now performing PCA on the combined dataset
+pDC <- NormalizeData(pDC)
+pDC <- ScaleData(pDC)
+pDC <- RunPCA(pDC, features = rownames(pDC))
+DimPlot(pDC, reduction = "pca", group.by = "treatment",label = TRUE)
+ggsave("pDC_treat_pca.png")
+DimPlot(pDC,reduction = "pca",group.by = c("sex","treatment"),label = TRUE)
+ggsave("pDC_sex&treat_pca.png")
+#Perform UMAP
+plan(strategy = "multicore", workers = 4)
+pDC <- FindNeighbors(pDC, dims = 1:20)
+pDC <- FindClusters(pDC, resolution = 0.5)
+pDC <- RunUMAP(pDC, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+DimPlot(pDC,reduction = "umap",group.by= c("sex","treatment"),label = TRUE)
+ggsave("pDC_sex&treat_UMAP.png")
+DimPlot(pDC)
+ggsave("pDC_UMAP_ungrouped.png")
+
+Idents(pDC) <- "subject"
+
+#Visualize the pDC dataset
+metadata <- pDC@meta.data
+#Create a bar plot of the cells per sex
+metadata %>%
+  ggplot(aes(x = sex, fill = sex)) +
+  geom_bar() +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 12, face = "bold"),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14)
+  ) +
+  ggtitle("pDC Cells per sex")
+ggsave("Cells_per_sex.png")
+
+#Create a boxplot comparing the distribution of pDC cells per sex
+metadata %>%
+		group_by(subject,sex) %>%
+		count(cell_type) %>%
+		mutate(pct =n/sum(n)) %>%
+
+
+# Calculate the average expression per subject in the pDC dataset
+cluster.average <- AverageExpression(pDC, group.by = "subject", return.seurat = TRUE)
+
+# Extract the numbers from the current idents as new subject identifiers
+new_idents <- as.character(gsub("[^0-9]", "", names(Idents(cluster.average))))
+
+# Add the new subject identifiers to the cluster.average object metadata
+cluster.average[["subject"]] <- new_idents
+
+# Create a lookup table of subject, sex, and treatment values from the pDC dataset
+subject_sex_lookup <- pDC@meta.data[, c("subject", "sex", "treatment")]
+
+# Remove rows with NAs
+subject_sex_lookup <- na.omit(subject_sex_lookup)
+
+# Remove duplicates
+subject_sex_lookup <- unique(subject_sex_lookup)
+
+# Order the lookup table by subject
+subject_sex_lookup <- subject_sex_lookup[order(subject_sex_lookup$subject), ]
+
+# Match the subject values between the cluster.average and subject_sex_lookup datasets
+matching_subjects <- intersect(cluster.average@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average@meta.data$subject)
+
+# Extract the corresponding sex and treatment values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+treatment_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "treatment"]
+
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average@meta.data$sex <- rep(NA, nrow(cluster.average@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+# Normalize the cluster average data
+cluster.average <- NormalizeData(cluster.average)
+
+# Scale the data
+cluster.average <- ScaleData(cluster.average, features = rownames(cluster.average))
+
+# Find variable features
+cluster.average <- FindVariableFeatures(object = cluster.average)
+
+# Perform PCA
+cluster.average <- RunPCA(cluster.average, features = VariableFeatures(object = cluster.average))
+
+# Find neighbors
+cluster.average <- FindNeighbors(cluster.average, dims = 1:20)
+
+# Find clusters
+cluster.average <- FindClusters(cluster.average, resolution = 0.5)
+
+# Perform UMAP
+cluster.average <- RunUMAP(cluster.average, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean", reduction.key = "umap", reduction.name = "umap")
+
+# Add subject information to the cluster average object
+cluster.average@meta.data$subject <- colnames(cluster.average)
+
+# Generate a heatmap for selected features, grouped by sex
+DoHeatmap(cluster.average, features = c("EIF1AY", "RPS4Y1", "XIST"), group.by = c('sex'), size = 5, draw.lines = FALSE, disp.min = -1, disp.max = 1)
+ggsave("pDC_average&sex_heatmap.png")
+
+# Save the cluster.average object as an RDS file
+saveRDS(cluster.average, file = "cluster.average_pDC_bloodhealthy.rds")
+
+```
+
+```{r}
+#Now perform DE analysis
+#First perform DE analysis on the combined dataset
+#plan(strategy = "multisession", workers = 50)
+#Idents(cluster.average) <- cluster.average@meta.data$sex
+#markers <- FindAllMarkers(cluster.average, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+#Visualize the DE genes
+#VlnPlot(cluster.average,features = markers$gene)
+#ggsave("cluster.average_DE_genes.png")
+#VlnPlot(pDC,features = markers$gene,group.by = "sex")
+#ggsave("pDC_DE_genes_Vln.png")
+#DoHeatmap(pDC,features = markers$gene,group.by = "sex")
+#ggsave("pDC_DE_heatmap.png")
+#DoHeatmap(cluster.average,features = markers$gene, group.by ="sex")
+#ggsave("cluster.average_DE_heatmap.png")
+
+#Idents(pDC) <- pDC@meta.data$treatment
+#markers_treat <- FindAllMarkers(pDC, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+#top10 <- head(markers_treat$gene,10)
+#VlnPlot(pDC,features = top10,group.by = "treatment")
+#ggsave("pDC_treat_DE_genes_Vln.png")
+#VlnPlot for Interferon genes
+#According to https://pubmed.ncbi.nlm.nih.gov/25839220/ IFNAR1, IFNAR2, LY6E, MX1, OAS3, IFI44L, IFI6, IFITM3 are upregulated which are all INF related genes.
+#VlnPlot(pDC,features = c("IFNAR1","IFNAR2","LY6E","MX1","OAS3","IFI44L","IFI6","IFITM3"),group.by = "treatment")
+#ggsave("pDC_treat_IFN_genes_Upreg_Vln.png")
+#And these are the downregulated genes
+#MGAM,ZNF331,PTGS2,MME,IL1R2,IL8,CXCL1,GOS2,NR4A2,NR4A3
+#VlnPlot(pDC,features = c("MGAM","ZNF331","PTGS2","MME","IL1R2","IL8","CXCL1","GOS2","NR4A2","NR4A3"),group.by = "treatment")
+#ggsave("pDC_treat_IFN_genes_Downreg_Vln.png")
+#top10 <- head(all_markers$gene,10)
+#VlnPlot(pDC,features = top10,group.by = "sex.treatment")
+```
+```{r}
+#Perform Pseudotime analysis using Monocle3 on the pDC Seurat object
+#Only done for all the treatments at once Uncomment if needed
+#First convert the Seurat object to a Monocle3 object
+library(SeuratWrappers)
+#Idents(pDC) <- pDC@meta.data$treatment
+#pDC_mc <- as.cell_data_set(pDC)
+#recreate.partitions <- c(rep(1, length(pDC_mc@colData@rownames)))
+#names(recreate.partitions) <- pDC_mc@colData@rownames
+#recreate.partitions <- as.factor(recreate.partitions)
+#pDC_mc@clusters@listData[["UMAP"]][["partitions"]] <- recreate.partitions
+#list.cluster <- pDC@active.ident
+#pDC_mc@clusters@listData[["UMAP"]][["clusters"]] <- list.cluster
+#pDC_mc@int_colData@listData[["reducedDims"]]@listData[["UMAP"]] <- pDC@reductions$umap@cell.embeddings
+#cluster.before.traj <-plot_cells(pDC_mc, color_cells_by = "cluster", label_groups_by_cluster = F,
+#           group_label_size = 5) + theme(legend.position = "right")
+#cluster.before.traj
+#pDC_mc <- learn_graph(pDC_mc, use_partition = F)
+#plot_cells(pDC_mc, color_cells_by = "cluster", label_groups_by_cluster = F,
+#           group_label_size = 5) + theme(legend.position = "right")
+#ggsave("pDC_pseudotime_before.png")
+#pDC_mc <- order_cells(pDC_mc,reduction_method = "UMAP",verbose = T)
+#plot_cells(pDC_mc, color_cells_by = "pseudotime", label_groups_by_cluster = T,
+#           label_branch_points = T, label_roots = F, label_leaves = F) + theme(legend.position = "right")
+#ggsave("pDC._pseudotime.png")
+```
+```{r}
+#Now perform DE analysis
+library(EnhancedVolcano)
+library(AnnotationDbi)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(stringr)
+library(tibble)
+library(ggrepel)
+
+# Combine sex and treatment columns
+pDC_combined <- pDC
+sexsubject <- paste(pDC_combined@meta.data$sex, pDC_combined@meta.data$subject, sep = "_")
+sextreatment <- paste(pDC_combined@meta.data$sex, pDC_combined@meta.data$treatment, sep = "_")
+pDC_combined[["sex.treatment"]] <- sextreatment
+
+# Split treatment column to create a 'stim' column
+pDC_combined[['stim']] <- str_split_fixed(pDC_combined@meta.data$treatment, "h", 2)[,2]
+pDC_combined$stim[pDC_combined$stim == ""] <- "UT"
+
+# Visualize data using DimPlot
+DimPlot(pDC_combined, group.by = "sex.treatment", label = T, pt.size = 0.5)
+ggsave("Dimplot using combined column of sex and treatment.png")
+#Add a Disease column to the meta data by splitting the treatment column
+Idents(pDC_combined) <- pDC_combined@meta.data$sex.treatment
+#Perform differential expression analysis on this combined column for each time point for each disease
+unt_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_UT", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
+
+#Volcano plot for Untreated Male vs Female
+EnhancedVolcano(unt_diffs,x='avg_log2FC',y='p_val',lab=rownames(unt_diffs),pCutoff = 0.05,FCcutoff = 0.25,title = "Differentially expressed genes between Males and Females in Untreated Samples")
+ggsave("Volcano Plot Male_Female_UT.png")
+#Gene Ontology Untreated
+#Convert to Ensembl IDs
+gene_list <- unt_diffs$avg_log2FC
+names(gene_list) <- rownames(unt_diffs)
+gene_list <- sort(gene_list,decreasing = TRUE)
+#Write gene list to tab-delimited file
+ego_UT<-  gseGO(geneList=gene_list,
+             ont ="BP",
+             keyType = "SYMBOL",
+             minGSSize = 3,
+             maxGSSize = 800,
+             pvalueCutoff = 0.05,
+             verbose = TRUE,
+             OrgDb = org.Hs.eg.db,
+             pAdjustMethod = "none")
+#Plot GS enriched
+#dotplot(ego,x="enrichmentScore",showCategory = 30)
+#ggsave("GO_enrichment_UT.png")
+#Convert to Entez IDs
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(unt_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+#Perform KEGG enrichment analysis
+gene_list <- unt_diffs$avg_log2FC
+names(gene_list) <- Ids_entrez
+gene_list <- sort(gene_list,decreasing = TRUE)
+kegg <- gseKEGG(gene = gene_list, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore" ,showCategory = 20)
+#ggsave("KEGG_enrichment_UT.png")
+#Upset plot of enriched KEGG terms
+#upsetplot(kegg,y="enrichmentScore",showCategory = 20)
+
+#3H Candida
+CA3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hCA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(CA3h_male_diffs) <- paste(colnames(CA3h_male_diffs),"Male",sep = "_")
+CA3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hCA", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(CA3h_female_diffs) <- paste(colnames(CA3h_female_diffs),"Female",sep = "_")
+#Combine the two dataframes
+merged_data <- merge(CA3h_male_diffs, CA3h_female_diffs, by="row.names", all=TRUE)
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+
+# Create the plot
+plot1_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
+  geom_point() +
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 3h of Candida Treatment") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
+ggsave(filename = "CA_3H.png",plot = plot1_3h)
+
+
+#Male_gene_expr
+gene_list_male <-CA3h_male_diffs$avg_log2FC
+names(gene_list_male) <- rownames(CA3h_male_diffs)
+gene_list_male <- sort(gene_list_male,decreasing = T)
+#Female_gene_expr
+gene_list_female <-CA3h_female_diffs$avg_log2FC
+names(gene_list_female) <- rownames(CA3h_female_diffs)
+gene_list_female <- sort(gene_list_female,decreasing = T)
+#Perform GO enrichment analysis for male
+ego_3hCA_M <- gseGO(gene = gene_list_male , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#Plot dotplot
+#dotplot(ego,x='enrichmentScore',showCategory=30)
+#ggsave("Male_GO_enrichment_CA3h.png")
+#upsetplot(ego,y="enrichmentScore",showCategory = 20)
+
+#Perform GO enrichment analysis for female
+ego_3hCA_F <- gseGO(gene = gene_list_female , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#dotplot(ego,x='enrichmentScore',showCategory=20)
+#save the data
+#ggsave("Female_GO_enrichment_CA3h.png")
+#upsetplot(ego,y="enrichmentScore",showCategory = 20)
+#Convert to Entez IDs Male
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(CA3h_male_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_male <-CA3h_male_diffs$avg_log2FC
+names(gene_list_male) <- Ids_entrez
+gene_list_male <-sort(gene_list_male,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_3hCA_M <- gseKEGG(gene = gene_list_male, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 20)
+#ggsave("Male_KEGG_enrichment_CA3h.png")
+#Convert to Enterez IDs Female
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(CA3h_female_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_female <-CA3h_female_diffs$avg_log2FC
+names(gene_list_female) <- Ids_entrez
+gene_list_female <-sort(gene_list_female,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_3hCA_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 20)
+#ggsave("Female_KEGG_enrichment_CA3h.png")
+#24H Candida
+CA24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hCA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(CA24h_male_diffs) <- paste(colnames(CA24h_male_diffs),"Male",sep = "_")
+CA24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hCA",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0)
+colnames(CA24h_female_diffs) <- paste(colnames(CA24h_female_diffs),"Female",sep = "_")
+merged_data <- merge(CA24h_male_diffs, CA24h_female_diffs, by="row.names", all=TRUE)
+
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+
+plot1_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
+  geom_point() +
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 24h of Candida Treatment") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
+plot1_24h
+ggsave(filename = "CA_24H.png",plot = plot1_24h)
+#Male_gene_expr
+gene_list_male <-CA24h_male_diffs$avg_log2FC
+names(gene_list_male) <- rownames(CA24h_male_diffs)
+gene_list_male <- sort(gene_list_male,decreasing = T)
+#Female_gene_expr
+gene_list_female <-CA24h_female_diffs$avg_log2FC
+names(gene_list_female) <- rownames(CA24h_female_diffs)
+gene_list_female <- sort(gene_list_female,decreasing = T)
+#Perform GO enrichment analysis for male
+ego_24hCA_M <- gseGO(gene = gene_list_male , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#Plot dotplot
+#dotplot(ego,x='enrichmentScore',showCategory=30)
+#ggsave("Male_GO_enrichment_CA24h.png")
+#Perform GO enrichment analysis for female
+ego_24hCA_F <- gseGO(gene = gene_list_female , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#dotplot(ego,x='enrichmentScore',showCategory=20)
+#ggsave("Female_GO_enrichment_CA24h.png")
+#Convert to Entez IDs Male
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(CA24h_male_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_male <-CA24h_male_diffs$avg_log2FC
+names(gene_list_male) <- Ids_entrez
+gene_list_male <-sort(gene_list_male,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_24hCA_M <- gseKEGG(gene = gene_list_male, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Male_KEGG_enrichment_CA24h.png")
+#Convert to Enterez IDs Female
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(CA24h_female_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_female <-CA24h_female_diffs$avg_log2FC
+names(gene_list_female) <- Ids_entrez
+gene_list_female <-sort(gene_list_female,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_24hCA_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Female_KEGG_enrichment_CA24h.png")
+
+#3h Pseudomonas
+PA3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hPA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(PA3h_male_diffs) <- paste(colnames(PA3h_male_diffs),"Male",sep = "_")
+PA3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hPA", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(PA3h_female_diffs) <- paste(colnames(PA3h_female_diffs),"Female",sep = "_")
+#Combine the two dataframes
+merged_data <- merge(PA3h_male_diffs, PA3h_female_diffs, by="row.names", all=TRUE)
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+
+# Create the plot
+plot2_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
+  geom_point() +
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 3h of PA Treatment") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
+ggsave("3hPA_DEG.png", plot2_3h, width = 10, height = 10, units = "cm")
+#Male_gene_expr
+gene_list_male <-PA3h_male_diffs$avg_log2FC
+names(gene_list_male) <- rownames(PA3h_male_diffs)
+gene_list_male <- sort(gene_list_male,decreasing = T)
+#Female_gene_expr
+gene_list_female <-PA3h_female_diffs$avg_log2FC
+names(gene_list_female) <- rownames(PA3h_female_diffs)
+gene_list_female <- sort(gene_list_female,decreasing = T)
+#Perform GO enrichment analysis for male
+ego_3hPA_M <- gseGO(gene = gene_list_male , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#Plot dotplot
+dotplot(ego_3hPA_M,x='enrichmentScore',showCategory=20)
+ggsave("Male_GO_enrichment_PA3h.png")
+#Perform GO enrichment analysis for female
+ego_3hPA_F <- gseGO(gene = gene_list_female , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+dotplot(ego_3hPA_F,x='enrichmentScore',showCategory=20)
+ggsave("Female_GO_enrichment_PA3h.png")
+#Convert to Entez IDs Male
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(PA3h_male_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_male <-PA3h_male_diffs$avg_log2FC
+names(gene_list_male) <- Ids_entrez
+gene_list_male <-sort(gene_list_male,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_3hPA_M <- gseKEGG(gene = gene_list_male, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Male_KEGG_enrichment_PA3h.png")
+#Convert to Enterez IDs Female
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(PA3h_female_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_female <-PA3h_female_diffs$avg_log2FC
+names(gene_list_female) <- Ids_entrez
+gene_list_female <-sort(gene_list_female,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_3hPA_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Female_KEGG_enrichment_PA3h.png")
+
+#24h Pseudomonas
+PA24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hPA", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(PA24h_male_diffs) <- paste(colnames(PA24h_male_diffs),"Male",sep = "_")
+PA24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hPA",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0)
+colnames(PA24h_female_diffs) <- paste(colnames(PA24h_female_diffs),"Female",sep = "_")
+merged_data <- merge(PA24h_male_diffs, PA24h_female_diffs, by="row.names", all=TRUE)
+
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+
+plot2_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
+  geom_point() +
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 24h of Pseudomonas Treatment") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
+plot2_24h
+ggsave(filename = "PA_24H.png",plot = plot2_24h)
+
+#Male_gene_expr
+gene_list_male <-PA24h_male_diffs$avg_log2FC
+names(gene_list_male) <- rownames(PA24h_male_diffs)
+gene_list_male <- sort(gene_list_male,decreasing = T)
+#Female_gene_expr
+gene_list_female <-PA24h_female_diffs$avg_log2FC
+names(gene_list_female) <- rownames(PA24h_female_diffs)
+gene_list_female <- sort(gene_list_female,decreasing = T)
+#Perform GO enrichment analysis for male
+ego_24hPA_M <- gseGO(gene = gene_list_male , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#Plot dotplot
+#dotplot(ego,x='enrichmentScore',showCategory=30)
+#ggsave("Male_GO_enrichment_PA24h.png")
+#Perform GO enrichment analysis for female
+ego_24hPA_F <- gseGO(gene = gene_list_female , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#dotplot(ego,x='enrichmentScore',showCategory=30)
+#ggsave('Female_GO_enrichment_PA24h.png')
+#Convert to Entez IDs Male
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(PA24h_male_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_male <-PA24h_male_diffs$avg_log2FC
+names(gene_list_male) <- Ids_entrez
+gene_list_male <-sort(gene_list_male,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_24hPA_M <- gseKEGG(gene = gene_list_male, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Male_KEGG_enrichment_PA24h.png")
+#Convert to Enterez IDs Female
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(PA24h_female_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_female <-PA24h_female_diffs$avg_log2FC
+names(gene_list_female) <- Ids_entrez
+gene_list_female <-sort(gene_list_female,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_24hPA_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Female_KEGG_enrichment_PA24h.png")
+#3H M.Tuberculosis
+MTB3h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_3hMTB", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(MTB3h_male_diffs) <- paste(colnames(MTB3h_male_diffs),"Male",sep = "_")
+MTB3h_female_diffs <- FindMarkers(pDC_combined, ident.1 = "Female_3hMTB", ident.2 = "Female_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(MTB3h_female_diffs) <- paste(colnames(MTB3h_female_diffs),"Female",sep = "_")
+#Combine the two dataframes
+merged_data <- merge(MTB3h_male_diffs, MTB3h_female_diffs, by="row.names", all=TRUE)
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+plot3_3h <- ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
+  geom_point() +
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 3h of Mycobacterium Tuberculosis") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
+plot3_3h
+ggsave(filename = "MTB_3H.png",plot = plot3_3h)
+#Male_gene_expr
+gene_list_male <-MTB3h_male_diffs$avg_log2FC
+names(gene_list_male) <- rownames(MTB3h_male_diffs)
+gene_list_male <- sort(gene_list_male,decreasing = T)
+#Female_gene_expr
+gene_list_female <-MTB3h_female_diffs$avg_log2FC
+names(gene_list_female) <- rownames(MTB3h_female_diffs)
+gene_list_female <- sort(gene_list_female,decreasing = T)
+#Perform GO enrichment analysis for male
+ego_3hMTB_M <- gseGO(gene = gene_list_male , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#Plot dotplot
+#dotplot(ego,x='enrichmentScore',showCategory=30)
+#ggsave("Male_GO_enrichment_MTB3h.png")
+#Perform GO enrichment analysis for female
+ego_3hMTB_F <- gseGO(gene = gene_list_female , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#dotplot(ego,x='enrichmentScore',showCategory=30)
+#ggsave("Female_GO_enrichment_MTB3h.png")
+#Convert to Entez IDs Male
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(MTB3h_male_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_male <-MTB3h_male_diffs$avg_log2FC
+names(gene_list_male) <- Ids_entrez
+gene_list_male <-sort(gene_list_male,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_3hMTB_M <- gseKEGG(gene = gene_list_male, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Male_KEGG_enrichment_MTB3h.png")
+#Convert to Enterez IDs Female
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(MTB3h_female_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_female <-MTB3h_female_diffs$avg_log2FC
+names(gene_list_female) <- Ids_entrez
+gene_list_female <-sort(gene_list_female,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_3hMTB_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 20)
+#ggsave("Female_KEGG_enrichment_MTB3h.png")
+#24H M.Tuberculosis
+MTB24h_male_diffs <- FindMarkers(pDC_combined, ident.1 = "Male_24hMTB", ident.2 = "Male_UT", min.pct = 0.25, logfc.threshold = 0)
+colnames(MTB24h_male_diffs) <- paste(colnames(MTB24h_male_diffs),"Male",sep = "_")
+MTB24h_female_diffs <-FindMarkers(pDC_combined,ident.1 = "Female_24hMTB",ident.2 = "Female_UT",min.pct = 0.25,logfc.threshold = 0)
+colnames(MTB24h_female_diffs) <- paste(colnames(MTB24h_female_diffs),"Female",sep = "_")
+merged_data <- merge(MTB24h_male_diffs, MTB24h_female_diffs, by="row.names", all=TRUE)
+merged_data$Log2FC <- ifelse(abs(merged_data$avg_log2FC_Male) > 1 & abs(merged_data$avg_log2FC_Female) > 1, ">1",
+                            ifelse(abs(merged_data$avg_log2FC_Male) > 1, ">1 in males",
+                                   ifelse(abs(merged_data$avg_log2FC_Female) > 1, ">1 in females", "<1")))
+plot3_24h <-ggplot(merged_data, aes(x = avg_log2FC_Male, y = avg_log2FC_Female, color = Log2FC)) +
+  geom_point() +
+  geom_text_repel(data = subset(merged_data, abs(avg_log2FC_Female) > 1),
+                  aes(label = Row.names), size = 3, point.padding = unit(0.1, "lines"), color = "black") +
+  xlim(-4, 6) +
+  ylim(-5, 5) +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  ggtitle("DEG after 24h of Mycobacterium Tuberculosis") +
+  theme(text = element_text(size = 8)) +
+  scale_color_manual(values = c(">1" = "red", ">1 in males" = "lightblue", ">1 in females" = "pink", "<1" = "grey"))
+plot3_24h
+ggsave(filename = "MTB_24H.png",plot = plot3_24h)
+
+#Male_gene_expr
+gene_list_male <-MTB24h_male_diffs$avg_log2FC
+names(gene_list_male) <- rownames(MTB24h_male_diffs)
+gene_list_male <- sort(gene_list_male,decreasing = T)
+#Female_gene_expr
+gene_list_female <-MTB24h_female_diffs$avg_log2FC
+names(gene_list_female) <- rownames(MTB24h_female_diffs)
+gene_list_female <- sort(gene_list_female,decreasing = T)
+#Perform GO enrichment analysis for male
+ego_24hMTB_M <- gseGO(gene = gene_list_male , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#Plot dotplot
+#dotplot(ego,x='enrichmentScore',showCategory=30)
+#ggsave("Male_GO_enrichment_MTB24h.png")
+#Perform GO enrichment analysis for female
+ego_24hMTB_F <- gseGO(gene = gene_list_female , ont ="BP", keyType = "SYMBOL", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, OrgDb = org.Hs.eg.db, pAdjustMethod = "none")
+#dotplot(ego,x='enrichmentScore',showCategory=30)
+#ggsave("Female_GO_enrichment_MTB24h.png")
+#Convert to Entez IDs Male
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(MTB24h_male_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_male <-MTB24h_male_diffs$avg_log2FC
+names(gene_list_male) <- Ids_entrez
+gene_list_male <-sort(gene_list_male,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_24hMTB_M <- gseKEGG(gene = gene_list_male, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Male_KEGG_enrichment_MTB24h.png")
+#Convert to Enterez IDs Female
+Ids_entrez <- mapIds(org.Hs.eg.db,keys=rownames(MTB24h_female_diffs),column="ENTREZID", keytype="SYMBOL", multiVals="first")
+gene_list_female <-MTB24h_female_diffs$avg_log2FC
+names(gene_list_female) <- Ids_entrez
+gene_list_female <-sort(gene_list_female,decreasing = T)
+#Perform KEGG enrichment analysis male
+kegg_24hMTB_F <- gseKEGG(gene = gene_list_female, organism = "hsa", nPerm = 10000, minGSSize = 3, maxGSSize = 800, pvalueCutoff = 0.05, verbose = TRUE, pAdjustMethod = "none")
+#dotplot(kegg,x="enrichmentScore",showCategory = 30)
+#ggsave("Female_KEGG_enrichment_MTB24h.png")
+```
+```{r}
+#Further subsetting to facilitate comparisions
+#Subset the cluster.average to select only the UT individuals
+UT <- subset(pDC,subset = treatment == 'UT')
+cluster.average_UT <-AverageExpression(UT,group.by = 'subject',return.seurat = T)
+#Normalize the data
+cluster.average_UT <- NormalizeData(cluster.average_UT)
+#Scale the data
+cluster.average_UT <- ScaleData(cluster.average_UT)
+#Find Variable Genes
+cluster.average_UT <- FindVariableFeatures(cluster.average_UT)
+#Perform a PCA
+cluster.average_UT <- RunPCA(cluster.average_UT,dims=1:20)
+#Find Neighbors
+cluster.average_UT <- FindNeighbors(cluster.average_UT)
+#Find Clusters
+cluster.average_UT <- FindClusters(cluster.average_UT,resolution = 0.5)
+
+#Run UMAP
+cluster.average_UT <- RunUMAP(cluster.average_UT, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+
+subject_sex_lookup <- pDC@meta.data[, c("subject", "sex")]
+# Remove rows with NAs
+subject_sex_lookup <- na.omit(subject_sex_lookup)
+# Remove duplicates
+subject_sex_lookup <- unique(subject_sex_lookup)
+# Order by subject
+subject_sex_lookup <- subject_sex_lookup[order(subject_sex_lookup$subject),]
+#Add subject column to cluster.average_UT
+cluster.average_UT@meta.data$subject <-names(Idents(cluster.average_UT))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_UT@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_UT@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_UT@meta.data$sex <- rep(NA, nrow(cluster.average_UT@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_UT@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+
+#CA
+# Subset pDC_CA
+pDC_CA <-subset(pDC_combined,subset= treatment == '3hCA')
+cluster.average_3hCA <-AverageExpression(pDC_CA,group.by = 'subject' ,return.seurat= T)
+#Normalize the data
+cluster.average_3hCA <- NormalizeData(cluster.average_3hCA)
+#Scale the data
+cluster.average_3hCA <- ScaleData(cluster.average_3hCA)
+#Find variable genes
+cluster.average_3hCA <- FindVariableFeatures(cluster.average_3hCA)
+#Run PCA
+cluster.average_3hCA <- RunPCA(cluster.average_3hCA,dims=1:20)
+#Find Neighbors
+cluster.average_3hCA <- FindNeighbors(cluster.average_3hCA)
+#Find Clusters
+cluster.average_3hCA <- FindClusters(cluster.average_3hCA, resolution = 0.5)
+#Run UMAP
+cluster.average_3hCA <- RunUMAP(cluster.average_3hCA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Add the sex and subject information.
+subject_sex_lookup <- pDC@meta.data[, c("subject", "sex")]
+# Remove rows with NAs
+subject_sex_lookup <- na.omit(subject_sex_lookup)
+# Remove duplicates
+subject_sex_lookup <- unique(subject_sex_lookup)
+# Order by subject
+subject_sex_lookup <- subject_sex_lookup[order(subject_sex_lookup$subject),]
+#Add subject column to cluster.average_3hCA
+cluster.average_3hCA@meta.data$subject <-names(Idents(cluster.average_3hCA))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_3hCA@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_3hCA@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_3hCA@meta.data$sex <- rep(NA, nrow(cluster.average_3hCA@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_3hCA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+#CA24h
+#Subset from pDC_combined
+pDC_combined_CA24h <- subset(pDC_combined, subset = treatment=='24hCA')
+#Write the same code as the previous block
+cluster.average_24hCA <- AverageExpression(pDC_combined_CA24h,group.by = 'subject',return.seurat = T)
+#Normalize the data
+cluster.average_24hCA <- NormalizeData(cluster.average_24hCA)
+#Find variable genes
+cluster.average_24hCA <- FindVariableFeatures(cluster.average_24hCA,selection.method = 'vst',nfeatures = 2000)
+#Find PCA
+cluster.average_24hCA <- RunPCA(cluster.average_24hCA)
+#Find Neighbors
+cluster.average_24hCA <- FindNeighbors(cluster.average_24hCA, dims = 1:20)
+#Find clusters
+cluster.average_24hCA <- FindNeighbors(cluster.average_24hCA, dims = 1:20)
+#Run UMAP
+cluster.average_24hCA <- cluster.average_3hCA <- RunUMAP(cluster.average_3hCA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+
+#Add the sex information and subject information.
+#Add subject column to cluster.average_24hCA
+cluster.average_24hCA@meta.data$subject <-names(Idents(cluster.average_24hCA))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_24hCA@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_24hCA@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_24hCA@meta.data$sex <- rep(NA, nrow(cluster.average_24hCA@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_24hCA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+#Pathways enriched at 3h for Pseudomonas when compared with UT
+#Subset the 3hPA data from pDC
+pDC_combined_PA3h <- subset(pDC_combined, subset = treatment=='3hPA')
+
+
+cluster.average_3hPA <- AverageExpression(pDC_combined_PA3h, group.by = 'subject',return.seurat = TRUE)
+#Normalize the data
+cluster.average_3hPA <- NormalizeData(cluster.average_3hPA)
+#Find variable genes
+cluster.average_3hPA <- FindVariableFeatures(cluster.average_3hPA, selection.method = "vst", nfeatures = 2000)
+#Find PCA
+cluster.average_3hPA <- RunPCA(cluster.average_3hPA,features =rownames(cluster.average_3hPA))
+#Find Neighbors
+cluster.average_3hPA <- FindNeighbors(cluster.average_3hPA, dims = 1:20)
+#Find Clust
+cluster.average_3hPA <- FindClusters(cluster.average_3hPA, resolution = 0.5)
+#Find UMAP
+cluster.average_3hPA <- RunUMAP(cluster.average_3hPA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Add subject column to cluster.average_3hhPA
+cluster.average_3hPA@meta.data$subject <-names(Idents(cluster.average_3hPA))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_3hPA@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_3hPA@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_3hPA@meta.data$sex <- rep(NA, nrow(cluster.average_3hPA@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_3hPA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+#PA 24h
+pDC_combined_PA24h <- subset(pDC_combined, subset = treatment=='24hPA')
+cluster.average_24hPA <- AverageExpression(pDC_combined_PA3h, group.by = 'subject',return.seurat = TRUE)
+#Normalize the data
+cluster.average_24hPA <- NormalizeData(cluster.average_24hPA)
+#Find variable genes
+cluster.average_24hPA <- FindVariableFeatures(cluster.average_24hPA, selection.method = "vst", nfeatures = 2000)
+#Find PCA
+cluster.average_24hPA <- RunPCA(cluster.average_24hPA,features =rownames(cluster.average_24hPA))
+#Find Neighbors
+cluster.average_24hPA <- FindNeighbors(cluster.average_24hPA, dims = 1:20)
+#Find Clust
+cluster.average_24hPA <- FindClusters(cluster.average_24hPA, resolution = 0.5)
+#Find UMAP
+cluster.average_24hPA <- RunUMAP(cluster.average_24hPA, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+#Add subject column to cluster.average_3hhPA
+cluster.average_24hPA@meta.data$subject <-names(Idents(cluster.average_24hPA))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_24hPA@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_24hPA@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_24hPA@meta.data$sex <- rep(NA, nrow(cluster.average_24hPA@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_24hPA@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+#Pathways enriched in MTB compared with UT
+#MTB 3h
+pDC_combined_MTB3h <- subset(pDC_combined, subset = treatment=='3hMTB')
+cluster.average_3hMTB <- AverageExpression(pDC_combined_MTB3h, group.by = 'subject',return.seurat = TRUE)
+#Normalize the data
+cluster.average_3hMTB <- NormalizeData(cluster.average_3hMTB)
+#Find variable genes
+cluster.average_3hMTB <- FindVariableFeatures(cluster.average_3hMTB, selection.method = "vst", nfeatures = 2000)
+#Find PCA
+cluster.average_3hMTB <- RunPCA(cluster.average_3hMTB,features =rownames(cluster.average_3hMTB))
+#Find Neighbors
+cluster.average_3hMTB <- FindNeighbors(cluster.average_3hMTB, dims = 1:20)
+#Find Clust
+cluster.average_3hMTB <- FindClusters(cluster.average_3hMTB, resolution = 0.5)
+#Find UMAP
+cluster.average_3hMTB <- RunUMAP(cluster.average_3hMTB, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+
+#Add subject column to cluster.average_3hhPA
+cluster.average_3hMTB@meta.data$subject <-names(Idents(cluster.average_3hMTB))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_3hMTB@meta.data$subject, subject_sex_lookup$subject)
+
+# Fill in the "sex" column in the cluster.average object with the corresponding values from the pDC dataset
+# Find the indices of matching rows in the cluster.average object
+matching_rows <- match(matching_subjects, cluster.average_3hMTB@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_3hMTB@meta.data$sex <- rep(NA, nrow(cluster.average_3hMTB@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_3hMTB@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+
+#24h MTB
+
+pDC_combined_MTB24h <- subset(pDC_combined, subset = treatment=='24hMTB')
+
+cluster.average_24hMTB <- AverageExpression(pDC_combined_MTB3h, group.by = 'subject',return.seurat = TRUE)
+#Normalize the data
+cluster.average_24hMTB <- NormalizeData(cluster.average_24hMTB)
+#Find variable genes
+cluster.average_24hMTB <- FindVariableFeatures(cluster.average_24hMTB, selection.method = "vst", nfeatures = 2000)
+#Find PCA
+cluster.average_24hMTB <- RunPCA(cluster.average_24hMTB,features =rownames(cluster.average_24hMTB))
+#Find Neighbors
+cluster.average_24hMTB <- FindNeighbors(cluster.average_24hMTB, dims = 1:20)
+#Find Clust
+cluster.average_24hMTB <- FindClusters(cluster.average_24hMTB, resolution = 0.5)
+#Find UMAP
+cluster.average_24hMTB <- RunUMAP(cluster.average_24hMTB, dims = 1:20, n.neighbors = 50, min.dist = 0.25, metric = "euclidean",reduction.key = "umap",reduction.name = "umap")
+
+#Add subject column to cluster.average_3hhPA
+cluster.average_24hMTB@meta.data$subject <-names(Idents(cluster.average_24hMTB))
+# Match the subject values between the two datasets
+matching_subjects <- intersect(cluster.average_24hMTB@meta.data$subject, subject_sex_lookup$subject)
+
+matching_rows <- match(matching_subjects, cluster.average_24hMTB@meta.data$subject)
+# Extract the corresponding sex values from the subject_sex_lookup table
+sex_values <- subject_sex_lookup[match(matching_subjects, subject_sex_lookup[["subject"]]), "sex"]
+# Initialize the "sex" column in the cluster.average object with NAs
+cluster.average_24hMTB@meta.data$sex <- rep(NA, nrow(cluster.average_24hMTB@meta.data))
+
+# Assign the sex values to matching rows in the "sex" column of cluster.average
+cluster.average_24hMTB@meta.data$sex[!is.na(matching_rows)] <- sex_values[!is.na(matching_rows)]
+```
+```{r}
+#Comparing the gene expression differences at each time point
+Idents(pDC_CA) <- pDC_CA@meta.data$sex
+#Finding DE genes between the sexes
+CA_3h <- FindMarkers(pDC_CA,ident.1="Male",ident.2="Female",min.pct = 0.25,logfc.threshold = 0)
+EnhancedVolcano(CA_3h,lab = rownames(CA_3h),x = 'avg_log2FC',y = 'pct.1',title = '3h CA Males vs Females',pCutoff = 0.5,FCcutoff = 0.25)
+gene_list <- CA_3h$avg_log2FC
+names(gene_list) <- rownames(CA_3h)
+gene_list <- sort(gene_list,decreasing = TRUE)
+#Performing GSEA for 3h CA
+gsea_3hCA  <- gseGO(geneList=gene_list,
+             ont ="BP",
+             keyType = "SYMBOL",
+             minGSSize = 3,
+             maxGSSize = 800,
+             pvalueCutoff = 0.05,
+             verbose = TRUE,
+             OrgDb = org.Hs.eg.db,
+             pAdjustMethod = "none")
+dotplot(gsea_3hCA,x='enrichmentScore',showCategory=30)
+p_threshold <- 0.01
+enrichment_score_threshold <- 0.5
+#Selecting the common enriched gene sets between the different analyses (3-hour time point):
+Common_enriched <- Reduce(intersect, list(ego_3hCA_M$Description,ego_3hCA_F$Description,gsea_3hCA$Description))
+#Filter the common enriched gene sets based on significance thresholds:
+Common_enriched_sig <- Common_enriched[gsea_3hCA$p.adjust[gsea_3hCA$Description %in% Common_enriched] < p_threshold &
+                                      abs(gsea_3hCA$enrichmentScore[gsea_3hCA$Description %in% Common_enriched]) > enrichment_score_threshold]
+#Now compare with 24h
+Idents(pDC_combined_CA24h) <-pDC_combined_CA24h@meta.data$sex
+CA_24h <- FindMarkers(pDC_combined_CA24h,ident.1 = 'Male',ident.2 = 'Female',min.pct = 0.25,logfc.threshold = 0)
+EnhancedVolcano(CA_24h,lab = rownames(CA_24h),x = 'avg_log2FC',y = 'pct.1',title = '3h CA Males vs Females',pCutoff = 0.5,FCcutoff = 0.25)
+gene_list <- CA_24h$avg_log2FC
+names(gene_list) <- rownames(CA_24h)
+gene_list <- sort(gene_list,decreasing = TRUE)
+#Performing GSEA for 24h CA
+gsea_24hCA  <- gseGO(geneList=gene_list,
+             ont ="BP",
+             keyType = "SYMBOL",
+             minGSSize = 3,
+             maxGSSize = 800,
+             pvalueCutoff = 0.05,
+             verbose = TRUE,
+             OrgDb = org.Hs.eg.db,
+             pAdjustMethod = "none")
+#Plotting the results of the GSEA
+dotplot(gsea_24hCA,x='enrichmentScore',showCategory=30)
+#Selecting the common enriched gene sets between the different analyses
+Common_enriched <- intersect(gsea_3hCA$Description, gsea_24hCA$Description)
+Common_enriched_sig <- Common_enriched[
+  gsea_3hCA$p.adjust[gsea_3hCA$Description %in% Common_enriched] < p_threshold &
+  abs(gsea_3hCA$enrichmentScore[gsea_3hCA$Description %in% Common_enriched]) > enrichment_score_threshold
+]
+#Selecting common differentially expressed genesets  between all the timepoints
+Common_enriched_all_CA <- Reduce(intersect, list(ego_UT$Description,ego_3hCA_M$Description,ego_3hCA_F$Description, gsea_3hCA$Description, gsea_24hCA$Description))
+
+#Common_enriched_sig_all <- Common_enriched_all[
+#  gsea_3hCA$p.adjust[gsea_3hCA$Description %in% Common_enriched_all] < p_threshold &
+#  abs(gsea_3hCA$enrichmentScore[gsea_3hCA$Description %in% Common_enriched_all]) > enrichment_score_threshold &
+#  gsea_24hCA$p.adjust[gsea_24hCA$Description %in% Common_enriched_all] < p_threshold &
+#  abs(gsea_24hCA$enrichmentScore[gsea_24hCA$Description %in% Common_enriched_all]) > enrichment_score_threshold
+#]
+```
+```{r}
+#Comparing for PA
+Idents(pDC_combined_PA3h) <- pDC_combined_PA3h@meta.data$sex
+#Finding DE genes between the sexes
+PA_3h <- FindMarkers(pDC_combined_PA3h,ident.1="Male",ident.2="Female",min.pct = 0.25,logfc.threshold = 0)
+EnhancedVolcano(PA_3h,lab = rownames(PA_3h),x = 'avg_log2FC',y = 'pct.1',title = '3h CA Males vs Females',pCutoff = 0.5,FCcutoff = 0.25)
+gene_list <- PA_3h$avg_log2FC
+names(gene_list) <- rownames(PA_3h)
+gene_list <- sort(gene_list,decreasing = TRUE)
+#Performing GSEA
+gsea_3hPA  <- gseGO(geneList=gene_list,
+             ont ="BP",
+             keyType = "SYMBOL",
+             minGSSize = 3,
+             maxGSSize = 800,
+             pvalueCutoff = 0.05,
+             verbose = TRUE,
+             OrgDb = org.Hs.eg.db,
+             pAdjustMethod = "none")
+dotplot(gsea_3hPA,x='enrichmentScore',showCategory=20)
+ggsave("gsea_3hPA.png")
+p_threshold <- 0.01
+enrichment_score_threshold <- 0.5
+#Selecting the common enriched gene sets between the different analyses (3-hour time point):
+Common_enriched <- Reduce(intersect, list(ego_3hPA_M$Description,ego_3hPA_F$Description,gsea_3hPA$Description))
+Common_enriched_sig <- Common_enriched[gsea_3hPA$p.adjust[gsea_3hPA$Description %in% Common_enriched] < p_threshold &
+                                      abs(gsea_3hPA$enrichmentScore[gsea_3hPA$Description %in% Common_enriched]) > enrichment_score_threshold]
+
+Idents(pDC_combined_PA24h) <-pDC_combined_PA24h@meta.data$sex
+#Finding DE genes between the sexes
+PA_24h <- FindMarkers(pDC_combined_PA24h,ident.1 = 'Male',ident.2 = 'Female',min.pct = 0.25,logfc.threshold = 0)
+gene_list <- PA_24h$avg_log2FC
+names(gene_list) <- rownames(PA_24h)
+gene_list <- sort(gene_list,decreasing = TRUE)
+gsea_24hPA  <- gseGO(geneList=gene_list,
+             ont ="BP",
+             keyType = "SYMBOL",
+             minGSSize = 3,
+             maxGSSize = 800,
+             pvalueCutoff = 0.05,
+             verbose = TRUE,
+             OrgDb = org.Hs.eg.db,
+             pAdjustMethod = "none")
+dotplot(gsea_24hPA,x='enrichmentScore',showCategory=20)
+ggsave("gsea_24hPA.png")
+Common_enriched <- intersect(gsea_24hPA$Description, gsea_24hPA$Description)
+#Finding the common enriched gene sets between the different analyses (24-hour time point):
+Common_enriched_sig <- Common_enriched[
+  gsea_24hPA$p.adjust[gsea_24hPA$Description %in% Common_enriched] < p_threshold &
+  abs(gsea_24hPA$enrichmentScore[gsea_24hPA$Description %in% Common_enriched]) > enrichment_score_threshold
+]
+#Selecting common differentially expressed genesets  between all the timepoints
+Common_enriched_all_PA <- Reduce(intersect, list(ego_UT$Description,ego_3hPA_M$Description,ego_3hPA_F$Description, gsea_3hPA$Description, gsea_24hPA$Description))
+```
+```{r}
+#Comparing for MTB
+Idents(pDC_combined_MTB3h) <- pDC_combined_MTB3h@meta.data$sex
+#Finding DE genes between the sexes
+MTB_3h <-FindMarkers(pDC_combined_MTB3h,ident.1 = "Male",ident.2 = "Female",min.pct = 0.25,logfc.threshold = 0)
+EnhancedVolcano(MTB_3h,lab = rownames(MTB_3h),x = 'avg_log2FC',y = 'pct.1',title = '3h CA Males vs Females',pCutoff = 0.5,FCcutoff = 0.25)
+gene_list <- MTB_3h$avg_log2FC
+names(gene_list) <- rownames(MTB_3h)
+gene_list <- sort(gene_list,decreasing = TRUE)
+gsea_3hMTB  <- gseGO(geneList=gene_list,
+             ont ="BP",
+             keyType = "SYMBOL",
+             minGSSize = 3,
+             maxGSSize = 800,
+             pvalueCutoff = 0.05,
+             verbose = TRUE,
+             OrgDb = org.Hs.eg.db,
+             pAdjustMethod = "none")
+dotplot(gsea_3hMTB,x='enrichmentScore',showCategory=30)
+p_threshold <- 0.01
+enrichment_score_threshold <- 0.5
+#Selecting the common enriched gene sets between the different analyses
+Common_enriched <- Reduce(intersect, list(ego_3hMTB_M$Description,ego_3hMTB_F$Description,gsea_3hMTB$Description))
+Common_enriched_sig <- Common_enriched[gsea_3hMTB$p.adjust[gsea_3hMTB$Description %in% Common_enriched] < p_threshold &
+                                      abs(gsea_3hMTB$enrichmentScore[gsea_3hMTB$Description %in% Common_enriched]) > enrichment_score_threshold]
+Idents(pDC_combined_MTB24h) <- pDC_combined_MTB24h@meta.data$sex
+#Finding DE genes between the sexes
+gsea_24MTB <- FindMarkers(pDC_combined_MTB24h,ident.1 = "Male",ident.2 = "Female",min.pct = 0.25,logfc.threshold = 0)
+EnhancedVolcano(gsea_24MTB,lab = rownames(gsea_24MTB),x = 'avg_log2FC',y = 'pct.1',title = '3h CA Males vs Females',pCutoff = 0.5,FCcutoff = 0.25)
+gene_list <- gsea_24MTB$avg_log2FC
+names(gene_list) <- rownames(gsea_24MTB)
+gene_list <- sort(gene_list,decreasing = TRUE)
+#Finding enriched gene sets
+gsea_24hMTB  <- gseGO(geneList=gene_list,
+             ont ="BP",
+             keyType = "SYMBOL",
+             minGSSize = 3,
+             maxGSSize = 800,
+             pvalueCutoff = 0.05,
+             verbose = TRUE,
+             OrgDb = org.Hs.eg.db,
+             pAdjustMethod = "none")
+#Plotting the enriched gene sets
+dotplot(gsea_24hMTB,x='enrichmentScore',showCategory=30)
+Common_enriched_3h_24h <- intersect(gsea_3hMTB$Description, gsea_24hMTB$Description)
+#Selecting common differentially expressed genesets  between all the timepoints
+Common_enriched_all_MTB <- Reduce(intersect, list(ego_UT$Description,ego_3hMTB_M$Description,ego_3hMTB_F$Description, gsea_3hMTB$Description, gsea_24hMTB$Description))
+```
+
