@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/Rscript
 
 # Script containing function to replace the '/' with '' and separate with commas, and a function to calculate the signature score based on expression data
 
