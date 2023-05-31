@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/Rscript
 
 #Implementation of a Support Vector Machine (SVM) model for binary classification using the e1071 package in R. Here is a brief explanation of the code:
 #Data Preparation: The gene expression data for three genes, "EIF1AY", "RPS4Y1" and "XIST" are loaded into the variable X, and the corresponding sex labels ("Male" or "Female") are converted into numeric values (y).
